@@ -1,0 +1,40 @@
+{
+  "name": "jarvis",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Jarvis - 企业级 AI 智能效率助手",
+  "packageManager": "pnpm@9.15.4",
+  "scripts": {
+    "dev": "turbo dev",
+    "dev:web": "pnpm --filter @jarvis/web dev",
+    "dev:server": "pnpm --filter @jarvis/server dev",
+    "dev:desktop": "pnpm --filter @jarvis/desktop tauri dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "test:e2e": "pnpm --filter @jarvis/web test:e2e",
+    "format": "prettier --write \"**/*.{ts,tsx,vue,css,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,vue,css,json,md}\"",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "db:migrate": "pnpm --filter @jarvis/server db:migrate",
+    "db:studio": "pnpm --filter @jarvis/server db:studio",
+    "clean": "rimraf node_modules apps/*/node_modules packages/*/node_modules"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "eslint": "^9.0.0",
+    "eslint-plugin-vue": "^9.0.0",
+    "prettier": "^3.3.0",
+    "rimraf": "^6.0.0",
+    "turbo": "^2.0.0",
+    "typescript": "^5.5.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}
