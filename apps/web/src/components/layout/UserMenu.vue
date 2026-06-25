@@ -10,9 +10,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuSubContent,
 } from 'reka-ui'
 import AboutModal from './AboutModal.vue'
 import ProfileModal from './ProfileModal.vue'
@@ -22,17 +19,18 @@ const theme = useThemeStore()
 const router = useRouter()
 const showAbout = ref(false)
 const showProfile = ref(false)
+const themeExpanded = ref(false)
 
+function selectTheme(p: ThemePreset) { theme.switchTo(p) }
 function handleLogout() { auth.logout(); router.push('/login') }
 function handleSwitchAccount() { auth.logout(); router.push('/login') }
-function handleSwitchTheme(p: ThemePreset) { theme.switchTo(p) }
 function handleAbout() { showAbout.value = true }
 function initials(name: string): string { return name.slice(0, 2).toUpperCase() }
 </script>
 
 <template>
   <DropdownMenuRoot>
-    <DropdownMenuTrigger as="button" class="avatar-btn">
+    <DropdownMenuTrigger class="avatar-btn">
       <div class="avatar">{{ auth.user ? initials(auth.user.name) : '?' }}</div>
       <div class="avatar-name">{{ auth.user?.name || '未登录' }}</div>
     </DropdownMenuTrigger>
@@ -49,19 +47,15 @@ function initials(name: string): string { return name.slice(0, 2).toUpperCase() 
 
         <DropdownMenuSeparator class="menu-sep" />
 
-        <!-- Theme sub-menu with gap bridging -->
-        <DropdownMenuSub :open-delay="100" :close-delay="300">
-          <DropdownMenuSubTrigger class="menu-item sub-trigger">
-            主题
-            <span class="sub-arrow">▸</span>
-          </DropdownMenuSubTrigger>
-          <DropdownMenuPortal>
-            <DropdownMenuSubContent side="right" align="start" :side-offset="0" :align-offset="-8" class="sub-box">
-              <DropdownMenuItem class="menu-item" :class="{ 'menu-active': theme.active === 'chatgpt-dark' }" @select="handleSwitchTheme('chatgpt-dark')">暗色</DropdownMenuItem>
-              <DropdownMenuItem class="menu-item" :class="{ 'menu-active': theme.active === 'notion-light' }" @select="handleSwitchTheme('notion-light')">极简白</DropdownMenuItem>
-            </DropdownMenuSubContent>
-          </DropdownMenuPortal>
-        </DropdownMenuSub>
+        <!-- Theme: inline expand/collapse — no sub-menu, no gap, no JS event loss -->
+        <div class="menu-item" style="justify-content:space-between" @click.stop="themeExpanded = !themeExpanded">
+          主题
+          <svg class="arrow-icon" :class="{ flipped: themeExpanded }" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+        <div v-if="themeExpanded" class="theme-options">
+          <div class="menu-item" :class="{ active: theme.active === 'chatgpt-dark' }" @click.stop="selectTheme('chatgpt-dark')">暗色</div>
+          <div class="menu-item" :class="{ active: theme.active === 'notion-light' }" @click.stop="selectTheme('notion-light')">极简白</div>
+        </div>
 
         <DropdownMenuSeparator class="menu-sep" />
 
@@ -78,7 +72,7 @@ function initials(name: string): string { return name.slice(0, 2).toUpperCase() 
 </template>
 
 <style>
-/* ── Dropdown style ── */
+/* ── Menu boxes ── */
 .menu-box {
   min-width: 210px;
   background: var(--color-bg-secondary) !important;
@@ -87,22 +81,13 @@ function initials(name: string): string { return name.slice(0, 2).toUpperCase() 
   padding: 6px !important;
   box-shadow: 0 12px 40px rgba(0,0,0,0.4) !important;
 }
-.sub-box {
-  min-width: 110px;
-  background: var(--color-bg-secondary) !important;
-  border: 1px solid var(--color-border) !important;
-  border-radius: 14px !important;
-  padding: 6px !important;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.4) !important;
-}
-
-/* ── User info ── */
+/* ── User row ── */
 .menu-user { display: flex; align-items: center; gap: 10px; padding: 6px 8px 10px }
 .menu-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--color-accent-muted); color: var(--color-accent); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0 }
 .menu-name { font-size: 13px; font-weight: 600; color: var(--color-text-primary); margin-bottom: 1px }
 .menu-email { font-size: 11px; color: var(--color-text-muted) }
 
-/* ── Items ── */
+/* ── Items (shared by reka-ui + plain div) ── */
 .menu-item {
   border-radius: 8px !important;
   font-size: 13px !important;
@@ -112,52 +97,23 @@ function initials(name: string): string { return name.slice(0, 2).toUpperCase() 
   outline: none !important;
   display: flex !important;
   align-items: center !important;
-  transition: background 0.15s !important;
 }
-.menu-item[data-highlighted] {
-  background: var(--color-bg-hover) !important;
-  color: var(--color-text-primary) !important;
-}
-.menu-item.menu-active {
-  background: var(--color-accent-muted) !important;
-  color: var(--color-accent) !important;
-}
-.menu-item.menu-danger {
-  color: #ef4444 !important;
-}
-.menu-item.menu-danger[data-highlighted] {
-  background: rgba(239,68,68,0.08) !important;
-}
+.menu-item:hover { background: var(--color-bg-hover) }
+.menu-item[data-highlighted] { background: var(--color-bg-hover) !important; color: var(--color-text-primary) !important }
+.menu-item.active { background: var(--color-accent-muted) !important; color: var(--color-accent) !important }
+.menu-item.menu-danger { color: #ef4444 !important }
+.menu-item.menu-danger[data-highlighted] { background: rgba(239,68,68,0.08) !important }
 
-/* Sub trigger — bridge the gap to prevent mouse-out dismiss */
-.sub-trigger { justify-content: space-between }
-.sub-trigger[data-state="open"] { background: var(--color-bg-hover) !important }
-.sub-arrow { font-size: 11px; opacity: 0.5; margin-left: 12px }
+/* ── Theme expand ── */
+.theme-options { padding-left: 4px; margin-bottom: 2px }
+.arrow-icon { opacity: 0.4; flex-shrink: 0; transition: transform 0.15s }
+.arrow-icon.flipped { transform: rotate(90deg) }
 
-/* Bridge the gap between sub trigger and sub content via padding trick */
-.sub-box {
-  /* no gap — :side-offset="0" removes the physical gap */
-  position: relative;
-}
-/* Invisible hover bridge — expand hit area without visual change */
-.sub-box::before {
-  content: '';
-  position: absolute;
-  left: -10px;
-  top: 0;
-  bottom: 0;
-  width: 10px;
-}
-
-.menu-sep {
-  height: 1px !important;
-  background: var(--color-border-light) !important;
-  margin: 4px 0 !important;
-}
+.menu-sep { height: 1px !important; background: var(--color-border-light) !important; margin: 4px 0 !important }
 </style>
 
 <style scoped>
-.avatar-btn{display:flex;align-items:center;gap:10px;width:100%;padding:8px;border-radius:10px;background:none;border:none;cursor:pointer;color:var(--color-text-primary);font-family:inherit;transition:background .15s}
+.avatar-btn{display:flex;align-items:center;gap:10px;width:100%;padding:8px;border-radius:10px;cursor:pointer;color:var(--color-text-primary);font-family:inherit;transition:background .15s}
 .avatar-btn:hover{background:var(--color-bg-hover)}
 .avatar{width:34px;height:34px;border-radius:50%;background:var(--color-accent-muted);color:var(--color-accent);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
 .avatar-name{font-size:13px;color:var(--color-text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
