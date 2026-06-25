@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useAgent, type AgentTask } from '@/composables/useAgent'
+import UserMenu from '@/components/layout/UserMenu.vue'
 
 const { tasks, loading, fetchTasks, createTask } = useAgent()
 const showCreate = ref(false)
@@ -76,13 +77,12 @@ function statusClass(s: string): string {
     <aside class="sidebar">
       <h2 class="sidebar-title">Jarvis</h2>
       <nav class="nav">
-        <RouterLink to="/" class="nav-link">💬 对话</RouterLink>
-        <RouterLink to="/knowledge" class="nav-link">📚 知识库</RouterLink>
-        <RouterLink to="/agents" class="nav-link active">⚡ Agent</RouterLink>
-        <RouterLink to="/settings" class="nav-link">⚙️ 设置</RouterLink>
+        <RouterLink to="/" class="nav-link">对话</RouterLink>
+        <RouterLink to="/knowledge" class="nav-link">知识库</RouterLink>
+        <RouterLink to="/agents" class="nav-link active">Agent</RouterLink>
       </nav>
       <div class="flex-1" />
-      <p class="version">Jarvis v0.3</p>
+      <UserMenu />
     </aside>
 
     <main class="main">

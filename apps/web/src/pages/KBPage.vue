@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useKnowledgeBase } from '@/composables/useKnowledgeBase'
+import UserMenu from '@/components/layout/UserMenu.vue'
 
 const { bases, documents, loading, fetchBases, createBase, deleteBase, uploadDocument, fetchDocuments, deleteDocument } = useKnowledgeBase()
 const showCreate = ref(false)
@@ -41,13 +42,12 @@ async function handleUpload(e: Event) {
     <aside class="sidebar">
       <h2 class="sidebar-title">Jarvis</h2>
       <nav class="nav">
-        <RouterLink to="/" class="nav-link">💬 对话</RouterLink>
-        <RouterLink to="/knowledge" class="nav-link active">📚 知识库</RouterLink>
-        <RouterLink to="/agents" class="nav-link">⚡ Agent</RouterLink>
-        <RouterLink to="/settings" class="nav-link">⚙️ 设置</RouterLink>
+        <RouterLink to="/" class="nav-link">对话</RouterLink>
+        <RouterLink to="/knowledge" class="nav-link active">知识库</RouterLink>
+        <RouterLink to="/agents" class="nav-link">Agent</RouterLink>
       </nav>
       <div class="flex-1" />
-      <p class="version">Jarvis v0.3</p>
+      <UserMenu />
     </aside>
 
     <main class="main">
