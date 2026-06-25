@@ -65,4 +65,26 @@ export class AuthService {
     if (!user) throw new UnauthorizedException('用户不存在')
     return user
   }
+
+  async updateProfile(userId: string, data: { name?: string; avatarUrl?: string; currentPassword?: string; newPassword?: string }) {
+    const updateData: Record<string, unknown> = {}
+    if (data.name) updateData['name'] = data.name
+    if (data.avatarUrl !== undefined) updateData['avatarUrl'] = data.avatarUrl
+
+    if (data.currentPassword && data.newPassword) {
+      const user = await this.prisma.user.findUnique({ where: { id: userId } })
+      if (!user) throw new UnauthorizedException('用户不存在')
+      const valid = await bcrypt.compare(data.currentPassword, user.passwordHash)
+      if (!valid) throw new UnauthorizedException('当前密码错误')
+      updateData['passwordHash'] = await bcrypt.hash(data.newPassword, 12)
+    }
+
+    if (Object.keys(updateData).length === 0) return this.getProfile(userId)
+
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+      select: { id: true, email: true, name: true, avatarUrl: true, role: true, createdAt: true },
+    })
+  }
 }

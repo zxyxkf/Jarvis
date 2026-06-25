@@ -8,19 +8,17 @@ import {
   DropdownMenuTrigger,
   DropdownMenuPortal,
   DropdownMenuContent,
-  DropdownMenuLabel,
   DropdownMenuItem,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuSubContent,
   DropdownMenuSeparator,
 } from 'reka-ui'
 import AboutModal from './AboutModal.vue'
+import ProfileModal from './ProfileModal.vue'
 
 const auth = useAuthStore()
 const theme = useThemeStore()
 const router = useRouter()
 const showAbout = ref(false)
+const showProfile = ref(false)
 
 function handleLogout() { auth.logout(); router.push('/login') }
 function handleSwitchAccount() { auth.logout(); router.push('/login') }
@@ -48,37 +46,30 @@ function initials(name: string): string { return name.slice(0, 2).toUpperCase() 
 
         <DropdownMenuSeparator class="menu-sep" />
 
-        <DropdownMenuSub>
-          <DropdownMenuSubTrigger class="menu-item">
-            主题
-            <span class="menu-arrow">▸</span>
-          </DropdownMenuSubTrigger>
-          <DropdownMenuPortal>
-            <DropdownMenuSubContent side="right" align="start" :side-offset="6" class="menu-box" style="min-width:100px">
-              <DropdownMenuItem
-                class="menu-item"
-                :class="{ 'menu-active': theme.active === 'chatgpt-dark' }"
-                @select="handleSwitchTheme('chatgpt-dark')"
-              >暗色</DropdownMenuItem>
-              <DropdownMenuItem
-                class="menu-item"
-                :class="{ 'menu-active': theme.active === 'notion-light' }"
-                @select="handleSwitchTheme('notion-light')"
-              >极简白</DropdownMenuItem>
-            </DropdownMenuSubContent>
-          </DropdownMenuPortal>
-        </DropdownMenuSub>
+        <div class="menu-label">主题</div>
+        <DropdownMenuItem
+          class="menu-item"
+          :class="{ 'menu-active': theme.active === 'chatgpt-dark' }"
+          @click="handleSwitchTheme('chatgpt-dark')"
+        >暗色</DropdownMenuItem>
+        <DropdownMenuItem
+          class="menu-item"
+          :class="{ 'menu-active': theme.active === 'notion-light' }"
+          @click="handleSwitchTheme('notion-light')"
+        >极简白</DropdownMenuItem>
 
         <DropdownMenuSeparator class="menu-sep" />
 
-        <DropdownMenuItem class="menu-item" @select="handleSwitchAccount">切换账号</DropdownMenuItem>
-        <DropdownMenuItem class="menu-item" @select="handleAbout">关于 Jarvis</DropdownMenuItem>
-        <DropdownMenuItem class="menu-item menu-danger" @select="handleLogout">退出登录</DropdownMenuItem>
+        <DropdownMenuItem class="menu-item" @click="showProfile = true">个人信息</DropdownMenuItem>
+        <DropdownMenuItem class="menu-item" @click="handleSwitchAccount">切换账号</DropdownMenuItem>
+        <DropdownMenuItem class="menu-item" @click="handleAbout">关于 Jarvis</DropdownMenuItem>
+        <DropdownMenuItem class="menu-item menu-danger" @click="handleLogout">退出登录</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenuPortal>
   </DropdownMenuRoot>
 
   <AboutModal v-if="showAbout" @close="showAbout = false" />
+  <ProfileModal v-if="showProfile" @close="showProfile = false" />
 </template>
 
 <style>
@@ -114,6 +105,7 @@ function initials(name: string): string { return name.slice(0, 2).toUpperCase() 
   background: var(--color-bg-hover) !important;
   color: var(--color-text-primary) !important;
 }
+.menu-label { font-size: 10px; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.05em; padding: 6px 10px 2px }
 .menu-item.menu-active {
   background: var(--color-accent-muted) !important;
   color: var(--color-accent) !important;
@@ -124,7 +116,6 @@ function initials(name: string): string { return name.slice(0, 2).toUpperCase() 
 .menu-item.menu-danger[data-highlighted] {
   background: rgba(239,68,68,0.08) !important;
 }
-.menu-arrow { margin-left: auto; font-size: 11px; opacity: 0.5 }
 .menu-sep {
   height: 1px !important;
   background: var(--color-border-light) !important;

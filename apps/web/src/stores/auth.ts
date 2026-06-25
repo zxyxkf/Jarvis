@@ -84,13 +84,25 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function updateProfile(data: { name?: string; avatarUrl?: string; currentPassword?: string; newPassword?: string }) {
+    if (!accessToken.value) throw new Error('Not logged in')
+    const res = await fetch('/api/v1/auth/profile', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken.value}` },
+      body: JSON.stringify(data),
+    })
+    const body = await res.json()
+    if (body.code !== 0) throw new Error(body.message)
+    user.value = body.data
+  }
+
   function logout() {
     clearTokens()
   }
 
   return {
     user, accessToken, isLoggedIn,
-    login, register, logout, fetchProfile, refreshAccessToken,
+    login, register, logout, fetchProfile, updateProfile, refreshAccessToken,
     getAuthHeaders: (): Record<string, string> => accessToken.value
       ? { Authorization: `Bearer ${accessToken.value}` }
       : {},

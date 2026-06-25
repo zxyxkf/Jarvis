@@ -1,5 +1,10 @@
 <script setup lang="ts">
+import { onMounted } from 'vue'
+import { useAuthStore } from '@/stores/auth'
 import UserMenu from './UserMenu.vue'
+
+const auth = useAuthStore()
+onMounted(() => { if (!auth.user) auth.fetchProfile() })
 </script>
 
 <template>
