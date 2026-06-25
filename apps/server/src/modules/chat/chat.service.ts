@@ -3,6 +3,7 @@ import { PrismaService } from '@/infrastructure/database/prisma.service'
 import { ModelGateway } from '@/ai/gateway/model-gateway'
 import { SearchService } from '@/modules/knowledge/services/search.service'
 import { SemanticCacheService } from '@/ai/cache/semantic-cache.service'
+import { QueryRewriteService } from './services/query-rewrite.service'
 import type { ChatMessage } from '@/ai/interfaces'
 
 @Injectable()
@@ -14,6 +15,7 @@ export class ChatService {
     private readonly modelGateway: ModelGateway,
     private readonly searchService: SearchService,
     private readonly semanticCache: SemanticCacheService,
+    private readonly queryRewrite: QueryRewriteService,
   ) {}
 
   /** Build system prompt with RAG context */
@@ -105,13 +107,38 @@ export class ChatService {
 
     if (options?.knowledgeBaseId) {
       try {
-        const results = await this.searchService.hybridSearch(content, {
-          knowledgeBaseId: options.knowledgeBaseId,
-          topK: 5,
-        })
-        retrievedContext = results.map((r) => r.content).join('\n\n---\n\n')
+        // Query rewrite: expand user query for better recall
+        let rewrittenQueries: string[]
+        try {
+          rewrittenQueries = await this.queryRewrite.rewrite(content)
+        } catch {
+          rewrittenQueries = [content]
+        }
 
-        for (const r of results) {
+        // Search with all queries, merge and deduplicate
+        const allResults = await Promise.all(
+          rewrittenQueries.map((q) =>
+            this.searchService.hybridSearch(q, {
+              knowledgeBaseId: options.knowledgeBaseId!,
+              topK: 5,
+            }),
+          ),
+        )
+        const seen = new Set<string>()
+        const merged: typeof allResults[0] = []
+        for (const batch of allResults) {
+          for (const r of batch) {
+            if (!seen.has(r.chunkId)) {
+              seen.add(r.chunkId)
+              merged.push(r)
+            }
+          }
+        }
+        merged.sort((a, b) => b.score - a.score)
+        const topResults = merged.slice(0, 5)
+        retrievedContext = topResults.map((r) => r.content).join('\n\n---\n\n')
+
+        for (const r of topResults) {
           citations.push({
             chunkId: r.chunkId,
             documentName: r.documentName,
@@ -128,7 +155,7 @@ export class ChatService {
       }
     }
 
-    // 4. Build messages for LLM
+  // 5. Build messages for LLM
     const messages: ChatMessage[] = [
       { role: 'system', content: this.buildSystemPrompt(retrievedContext) },
     ]

@@ -1,7 +1,8 @@
-import { Controller, Post, Body, Req, Res, Logger, UseGuards } from '@nestjs/common'
+import { Controller, Post, Get, Body, Req, Res, Param, Logger, UseGuards } from '@nestjs/common'
 import { AuthGuard } from '@nestjs/passport'
 import type { Request, Response } from 'express'
 import { ChatService } from './chat.service'
+import { PrismaService } from '@/infrastructure/database/prisma.service'
 
 interface JwtRequest extends Request {
   user: { id: string; email: string; role: string }
@@ -12,7 +13,28 @@ interface JwtRequest extends Request {
 export class ChatController {
   private readonly logger = new Logger(ChatController.name)
 
-  constructor(private readonly chatService: ChatService) {}
+  constructor(
+    private readonly chatService: ChatService,
+    private readonly prisma: PrismaService,
+  ) {}
+
+  @Get('conversations')
+  async listConversations(@Req() req: JwtRequest) {
+    return this.prisma.conversation.findMany({
+      where: { userId: req.user.id },
+      orderBy: { updatedAt: 'desc' },
+      take: 50,
+      select: { id: true, title: true, createdAt: true, updatedAt: true },
+    })
+  }
+
+  @Get('conversations/:id')
+  async getConversation(@Param('id') id: string) {
+    return this.prisma.conversation.findUnique({
+      where: { id },
+      include: { messages: { orderBy: { createdAt: 'asc' } } },
+    })
+  }
 
   @Post('stream')
   async streamChat(
