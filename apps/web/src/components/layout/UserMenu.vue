@@ -10,6 +10,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
 } from 'reka-ui'
 import AboutModal from './AboutModal.vue'
 import ProfileModal from './ProfileModal.vue'
@@ -46,24 +49,26 @@ function initials(name: string): string { return name.slice(0, 2).toUpperCase() 
 
         <DropdownMenuSeparator class="menu-sep" />
 
-        <div class="menu-label">主题</div>
-        <DropdownMenuItem
-          class="menu-item"
-          :class="{ 'menu-active': theme.active === 'chatgpt-dark' }"
-          @click="handleSwitchTheme('chatgpt-dark')"
-        >暗色</DropdownMenuItem>
-        <DropdownMenuItem
-          class="menu-item"
-          :class="{ 'menu-active': theme.active === 'notion-light' }"
-          @click="handleSwitchTheme('notion-light')"
-        >极简白</DropdownMenuItem>
+        <!-- Theme sub-menu with gap bridging -->
+        <DropdownMenuSub :open-delay="100" :close-delay="300">
+          <DropdownMenuSubTrigger class="menu-item sub-trigger">
+            主题
+            <span class="sub-arrow">▸</span>
+          </DropdownMenuSubTrigger>
+          <DropdownMenuPortal>
+            <DropdownMenuSubContent side="right" align="start" :side-offset="0" :align-offset="-8" class="sub-box">
+              <DropdownMenuItem class="menu-item" :class="{ 'menu-active': theme.active === 'chatgpt-dark' }" @select="handleSwitchTheme('chatgpt-dark')">暗色</DropdownMenuItem>
+              <DropdownMenuItem class="menu-item" :class="{ 'menu-active': theme.active === 'notion-light' }" @select="handleSwitchTheme('notion-light')">极简白</DropdownMenuItem>
+            </DropdownMenuSubContent>
+          </DropdownMenuPortal>
+        </DropdownMenuSub>
 
         <DropdownMenuSeparator class="menu-sep" />
 
-        <DropdownMenuItem class="menu-item" @click="showProfile = true">个人信息</DropdownMenuItem>
-        <DropdownMenuItem class="menu-item" @click="handleSwitchAccount">切换账号</DropdownMenuItem>
-        <DropdownMenuItem class="menu-item" @click="handleAbout">关于 Jarvis</DropdownMenuItem>
-        <DropdownMenuItem class="menu-item menu-danger" @click="handleLogout">退出登录</DropdownMenuItem>
+        <DropdownMenuItem class="menu-item" @select="showProfile = true">个人信息</DropdownMenuItem>
+        <DropdownMenuItem class="menu-item" @select="handleSwitchAccount">切换账号</DropdownMenuItem>
+        <DropdownMenuItem class="menu-item" @select="handleAbout">关于 Jarvis</DropdownMenuItem>
+        <DropdownMenuItem class="menu-item menu-danger" @select="handleLogout">退出登录</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenuPortal>
   </DropdownMenuRoot>
@@ -76,6 +81,14 @@ function initials(name: string): string { return name.slice(0, 2).toUpperCase() 
 /* ── Dropdown style ── */
 .menu-box {
   min-width: 210px;
+  background: var(--color-bg-secondary) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 14px !important;
+  padding: 6px !important;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.4) !important;
+}
+.sub-box {
+  min-width: 110px;
   background: var(--color-bg-secondary) !important;
   border: 1px solid var(--color-border) !important;
   border-radius: 14px !important;
@@ -105,7 +118,6 @@ function initials(name: string): string { return name.slice(0, 2).toUpperCase() 
   background: var(--color-bg-hover) !important;
   color: var(--color-text-primary) !important;
 }
-.menu-label { font-size: 10px; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.05em; padding: 6px 10px 2px }
 .menu-item.menu-active {
   background: var(--color-accent-muted) !important;
   color: var(--color-accent) !important;
@@ -116,6 +128,27 @@ function initials(name: string): string { return name.slice(0, 2).toUpperCase() 
 .menu-item.menu-danger[data-highlighted] {
   background: rgba(239,68,68,0.08) !important;
 }
+
+/* Sub trigger — bridge the gap to prevent mouse-out dismiss */
+.sub-trigger { justify-content: space-between }
+.sub-trigger[data-state="open"] { background: var(--color-bg-hover) !important }
+.sub-arrow { font-size: 11px; opacity: 0.5; margin-left: 12px }
+
+/* Bridge the gap between sub trigger and sub content via padding trick */
+.sub-box {
+  /* no gap — :side-offset="0" removes the physical gap */
+  position: relative;
+}
+/* Invisible hover bridge — expand hit area without visual change */
+.sub-box::before {
+  content: '';
+  position: absolute;
+  left: -10px;
+  top: 0;
+  bottom: 0;
+  width: 10px;
+}
+
 .menu-sep {
   height: 1px !important;
   background: var(--color-border-light) !important;
