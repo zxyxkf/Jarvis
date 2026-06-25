@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useAgent, type AgentTask } from '@/composables/useAgent'
-import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from 'reka-ui'
 import AppSidebar from '@/components/layout/AppSidebar.vue'
 
 const { tasks, loading, fetchTasks, createTask } = useAgent()
@@ -75,13 +74,8 @@ function statusClass(s: string): string {
 
 <template>
   <div class="page">
-    <SplitterGroup direction="horizontal" class="splitter-root">
-      <SplitterPanel :default-size="16" :min-size="13" :max-size="25" class="sidebar-panel">
-        <AppSidebar />
-      </SplitterPanel>
-      <SplitterResizeHandle class="resize-handle-h" />
-      <SplitterPanel :default-size="84" class="main-panel">
-        <main class="main">
+    <AppSidebar />
+    <main class="main">
       <div class="main-header">
         <h3 class="main-title">Agent 任务</h3>
         <button class="btn-primary" @click="showCreate = !showCreate">{{ showCreate ? '取消' : '+ 新建任务' }}</button>
@@ -119,20 +113,12 @@ function statusClass(s: string): string {
         </div>
       </div>
         </main>
-      </SplitterPanel>
-    </SplitterGroup>
   </div>
 </template>
 
 <style scoped>
-.page{width:100vw;height:100vh;background:var(--color-bg-primary);color:var(--color-text-primary);font-family:Inter,system-ui,sans-serif}
-.splitter-root{width:100%;height:100%}
-.sidebar-panel{overflow:hidden}
-.resize-handle-h{width:3px;background:var(--color-border);transition:background .2s;position:relative}
-.resize-handle-h:hover,.resize-handle-h[data-resize-handle-active]{background:var(--color-accent)}
-.resize-handle-h::after{content:'';position:absolute;inset:-4px}
-.main-panel{overflow:hidden}
-.main{height:100%;overflow-y:auto;padding:32px}
+.page{display:flex;width:100vw;height:100vh;background:var(--color-bg-primary);color:var(--color-text-primary);font-family:Inter,system-ui,sans-serif}
+.main{flex:1;overflow-y:auto;padding:32px;min-width:0}
 .main-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:24px }
 .main-title { font-size:16px; font-weight:600; color:var(--color-text-primary); margin:0 }
 .btn-primary { padding:8px 18px; background:var(--color-accent); color:#fff; border:none; border-radius:10px; font-size:13px; font-weight:600; cursor:pointer; transition:background .15s; font-family:inherit }

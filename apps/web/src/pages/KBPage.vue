@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useKnowledgeBase } from '@/composables/useKnowledgeBase'
-import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from 'reka-ui'
 import AppSidebar from '@/components/layout/AppSidebar.vue'
 
 const { bases, documents, loading, fetchBases, createBase, deleteBase, uploadDocument, fetchDocuments, deleteDocument } = useKnowledgeBase()
@@ -40,12 +39,7 @@ async function handleUpload(e: Event) {
 
 <template>
   <div class="page">
-    <SplitterGroup direction="horizontal" class="splitter-root">
-      <SplitterPanel :default-size="16" :min-size="13" :max-size="25" class="sidebar-panel">
-        <AppSidebar />
-      </SplitterPanel>
-      <SplitterResizeHandle class="resize-handle-h" />
-      <SplitterPanel :default-size="84" class="main-panel">
+    <AppSidebar />
     <main class="main">
       <div class="main-header">
         <h3 class="main-title">知识库</h3>
@@ -101,20 +95,12 @@ async function handleUpload(e: Event) {
       <div v-if="!selectedKB && bases.length > 0" class="empty">选择一个知识库查看文档</div>
       <div v-if="bases.length === 0 && !loading" class="empty">暂无知识库，点击「+ 新建」创建</div>
     </main>
-      </SplitterPanel>
-    </SplitterGroup>
   </div>
 </template>
 
 <style scoped>
-.page{width:100vw;height:100vh;background:var(--color-bg-primary);color:var(--color-text-primary);font-family:Inter,system-ui,sans-serif}
-.splitter-root{width:100%;height:100%}
-.sidebar-panel{overflow:hidden}
-.resize-handle-h{width:3px;background:var(--color-border);transition:background .2s;position:relative}
-.resize-handle-h:hover,.resize-handle-h[data-resize-handle-active]{background:var(--color-accent)}
-.resize-handle-h::after{content:'';position:absolute;inset:-4px}
-.main-panel{overflow:hidden}
-.main{height:100%;overflow-y:auto;padding:32px}
+.page{display:flex;width:100vw;height:100vh;background:var(--color-bg-primary);color:var(--color-text-primary);font-family:Inter,system-ui,sans-serif}
+.main{flex:1;overflow-y:auto;padding:32px;min-width:0}
 .main-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
 .main-title{font-size:16px;font-weight:600;color:var(--color-text-primary);margin:0}
 .btn-primary{padding:8px 18px;background:var(--color-accent);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s;font-family:inherit}
