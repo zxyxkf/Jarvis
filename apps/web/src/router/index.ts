@@ -8,5 +8,10 @@ export const router = createRouter({
       name: 'home',
       component: () => import('@/pages/HomePage.vue'),
     },
+    {
+      path: '/knowledge',
+      name: 'knowledge',
+      component: () => import('@/pages/KBPage.vue'),
+    },
   ],
 })

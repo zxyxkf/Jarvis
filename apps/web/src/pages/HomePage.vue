@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useStreamChat } from '@/composables/useStreamChat'
+import { useThemeStore, type ThemePreset } from '@/stores/theme'
 import ChatBubble from '@/components/chat/ChatBubble.vue'
 import ChatInput from '@/components/chat/ChatInput.vue'
 import ChatSources from '@/components/chat/ChatSources.vue'
 
+const router = useRouter()
+const theme = useThemeStore()
 const { messages, isStreaming, sendMessage, abort } = useStreamChat()
 const selectedKB = ref<string | undefined>()
 
@@ -24,6 +28,10 @@ function handleStop() {
       <div class="mb-6">
         <h2 class="text-lg font-bold text-[var(--color-text-primary)]">Jarvis</h2>
       </div>
+      <nav class="space-y-1 mb-4">
+        <RouterLink to="/" class="block px-3 py-2 rounded-lg text-sm hover:bg-[var(--color-bg-hover)] transition-colors">对话</RouterLink>
+        <RouterLink to="/knowledge" class="block px-3 py-2 rounded-lg text-sm hover:bg-[var(--color-bg-hover)] transition-colors">知识库</RouterLink>
+      </nav>
       <div class="mb-4">
         <label class="block text-[11px] uppercase tracking-wider text-[var(--color-text-muted)] mb-2">知识库</label>
         <select
@@ -34,9 +42,22 @@ function handleStop() {
           <option value="demo">Demo 知识库</option>
         </select>
       </div>
+      <div class="mb-4">
+        <label class="block text-[11px] uppercase tracking-wider text-[var(--color-text-muted)] mb-2">主题</label>
+        <select
+          :modelValue="theme.active"
+          class="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border)] rounded-lg text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent)] transition-colors"
+          @change="theme.switchTo(($event.target as HTMLSelectElement).value as ThemePreset)"
+        >
+          <option value="chatgpt-dark">ChatGPT 暗色</option>
+          <option value="jarvis-blue">Jarvis 科技蓝</option>
+          <option value="notion-light">Notion 极简白</option>
+          <option value="cyber-terminal">赛博终端</option>
+        </select>
+      </div>
       <div class="flex-1" />
       <div class="text-[10px] text-[var(--color-text-muted)]">
-        Phase 3 — v0.3
+        Jarvis v0.3
       </div>
     </aside>
 
