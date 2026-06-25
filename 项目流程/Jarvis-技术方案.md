@@ -316,177 +316,248 @@ async function searchDocuments(query: SearchQuery) {
 #### 0.7.1 角色全景图
 
 ```
-                        🔷 项目经理
-                      任务拆解 · 范围控制 · 里程碑验收
-                            │
-                    ┌───────┼───────┐
-                    │               │
-               🔷 架构师         🔷 测试者
-          接口边界 · 数据流    边界条件 · 三层断言
-          ADR · 依赖图        E2E 验证 · 评估集回归
-                    │               │
-            ┌───────┴───────────────┤
-            │      🔷 开发者        │
-            │  ┌──────────────────┐ │
-            │  │ 🟦 后端开发者    │ │
-            │  │ 🟩 前端开发者    │ │
-            │  │ 🟨 AI 工程师     │ │
-            │  │ 🟪 数据库工程师  │ │
-            │  │ 🟫 基建/DevOps  │ │
-            │  └──────────────────┘ │
-            └──────────┬────────────┘
-                       │
-                  🔷 审查者
-            code-reviewer · security-reviewer
-            silent-failure-hunter · type-design-analyzer
+              ┌─────────────────────────────────────┐
+              │        🔷 项目经理 (边界执法者)       │
+              │                                      │
+              │  边界执法 · 提交审批 · 范围控制      │
+              │  里程碑验收 · Done Criteria · 违规阻断 │
+              │                                      │
+              │  ⚠️ 唯一有权批准提交的角色            │
+              │  ⚠️ 唯一有权判定"不违规"的角色         │
+              └──────────┬──────────────────────────┘
+                         │
+         ┌───────────────┼───────────────┐
+         │               │               │
+   🔷 架构师         🔷 测试者        🔷 审查者
+   接口边界定义      边界条件覆盖      代码质量审查
+   ADR 记录         三层断言验证      安全漏洞扫描
+   依赖方向审批      E2E 独立验证      沉默失败检测
+         │               │               │
+         └───────────────┼───────────────┘
+                         │
+              ┌──────────┴──────────┐
+              │    🔷 开发者        │
+              │  ┌────────────────┐ │
+              │  │ 🟦 后端        │ │
+              │  │ 🟩 前端        │ │
+              │  │ 🟨 AI 工程     │ │
+              │  │ 🟪 数据库      │ │
+              │  │ 🟫 基建/DevOps │ │
+              │  └────────────────┘ │
+              │                    │
+              │  ⛔ 开发者不检查    │
+              │     自己的边界合规  │
+              │  ⛔ 开发者不批准    │
+              │     自己的提交      │
+              └────────────────────┘
+
+  关键分离:
+  开发者 = 在边界内写代码 (执行者, 不对合规负责)
+  PM     = 检查边界合规 (执法者, 唯一审批人)
 ```
 
 #### 0.7.2 每个角色的关注点与检查清单
 
-| 角色 | 激活时机 | 核心关注点 | 提交前检查 |
-|------|---------|-----------|----------|
-| 🔷 **项目经理** | 每个 Phase 开始/结束 | 范围不膨胀、里程碑不延期、依赖不阻塞、Done Criteria 逐项验收 | Phase 验收清单全部勾选 |
-| 🔷 **架构师** | 新技术决策前、跨模块设计 | 接口边界（只依赖抽象）、数据流向（单向/不可变）、模块耦合度、ADR 记录 | 接口定义清晰、数据流图可解释、依赖无循环 |
-| 🟦 **后端开发者** | NestJS 模块开发 | DI 依赖注入、参数校验(Zod)、异常拦截、接口 `/api/v1/` 前缀、响应体格式统一 | Controller 有 try-catch、DTO Zod schema 与 Prisma 类型一致、Guard 生效 |
-| 🟩 **前端开发者** | Vue 组件/Composable/Pinia | Props/Emits 类型显式定义、SSE 流式断开恢复、虚拟列表空状态/加载态/错误态、响应式断点覆盖 | PWA 缓存策略正确、暗色/浅色双主题可用、组件无未定义 Props |
-| 🟨 **AI 工程师** | LangChain 管线/Prompt/模型网关 | RAG 召回质量（Recall/Precision）、Token 效率、模型路由与降级、内容安全审核、三层断言测试 | 对抗性测试 ≥30 条通过、Token 消耗记录、Prompt 模板非硬编码 |
-| 🟪 **数据库工程师** | Prisma Schema/Migration/Query | 索引策略（查询走 EXPLAIN）、Migration 可回滚、Schema 变更向前兼容、备份已执行 | Migration SQL 审查通过、pgvector 索引正确、query 无 N+1 |
-| 🟫 **基建/DevOps** | Docker/CI/监控/部署 | 容器 healthcheck 就绪、资源限制生效、启动顺序正确（service_healthy）、告警规则配置、日志结构化(Pino) | Docker Compose 一键启动成功、CI 管线绿色、Prometheus 指标可采集 |
-| 🔷 **测试者** | 每个功能完成后 | 边界条件（空值/超长/并发）、异常路径（网络断开/API 超时/模型报错）、AI 输出用三层断言、E2E 关键路径 | 单元测试 ≥80%、E2E 骨架通过、评估集基线记录 |
-| 🔷 **审查者** | 提交前 | 代码坏味道（God Service/深层嵌套/硬编码）、安全漏洞（OWASP Top-10）、沉默失败（被吞异常）、类型设计（易被误用的接口） | 派 code-reviewer + security-reviewer + silent-failure-hunter 子 Agent 独立审查 |
+| 角色 | 激活时机 | 核心关注点 | **能否批准提交** |
+|------|---------|-----------|:--:|
+| 🔷 **项目经理 (PM)** | **持续在线**。每次开发者写完代码后、任何提交前、每个 Phase 开始/结束 | **边界执法（铁律 1-7 全量检查）、目录隔离合规、import 方向审查、硬编码检测、范围不膨胀、里程碑不延期、Done Criteria 逐项验收** | ✅ **唯一审批人** |
+| 🔷 **架构师** | 新技术决策前、跨模块设计 | 接口边界设计（只依赖抽象）、数据流向（单向/不可变）、模块耦合度、ADR 记录 | ❌ |
+| 🟦 **后端开发者** | NestJS 模块开发 | DI 依赖注入、参数校验(Zod)、异常拦截、接口 `/api/v1/` 前缀、响应体格式统一 | ❌ |
+| 🟩 **前端开发者** | Vue 组件/Composable/Pinia | Props/Emits 类型显式定义、SSE 流式断开恢复、虚拟列表三态（空/加载/错误）、响应式断点覆盖 | ❌ |
+| 🟨 **AI 工程师** | LangChain 管线/Prompt/模型网关 | RAG 召回质量、Token 效率、模型路由与降级、内容安全审核、三层断言测试 | ❌ |
+| 🟪 **数据库工程师** | Prisma Schema/Migration/Query | 索引策略、Migration 可回滚、Schema 变更向前兼容、备份 | ❌ |
+| 🟫 **基建/DevOps** | Docker/CI/监控/部署 | 容器 healthcheck、资源限制、启动顺序（service_healthy）、告警规则、日志结构化 | ❌ |
+| 🔷 **测试者** | 每个功能完成后 | 边界条件、异常路径、AI 三层断言、E2E 关键路径 | ❌ |
+| 🔷 **审查者** | PM 审批前 | 代码坏味道、安全漏洞、沉默失败、类型设计 | ❌ (给 PM 提供审查报告，PM 做最终裁决) |
 
-#### 0.7.3 角色切换规则
-
-```
-1. 角色切换由开发阶段自动决定，不需要手动指令
-
-   Phase 开始  → 🔷 项目经理 (任务拆解)
-   接口/数据流  → 🔷 架构师 (定义契约)
-   写后端代码   → 🟦 后端开发者
-   写前端代码   → 🟩 前端开发者
-   写 AI 管线   → 🟨 AI 工程师
-   改数据库     → 🟪 数据库工程师
-   配 Docker/CI → 🟫 基建工程师
-   功能完成     → 🔷 测试者 (验证)
-   提交前       → 🔷 审查者 (派子 Agent 独立审查)
-   Phase 结束   → 🔷 项目经理 (验收)
-
-2. 需要"全貌理解"的角色 → 我自己切换（上下文完整）
-   需要"独立视角"的角色 → 派子 Agent（防盲区）
-
-   我自己切换:                   派子 Agent:
-   🔷 项目经理  🔷 架构师        code-reviewer
-   🟦🟩🟨🟪🟫 全部开发者子角色    security-reviewer
-   🔷 测试者（单元/集成）         silent-failure-hunter
-                                 e2e-runner (Playwright 独立验证)
-                                 type-design-analyzer
-```
-
-#### 0.7.4 典型开发节奏 (以 Phase 1 为例)
+#### 0.7.3 边界执法流程（核心机制）
 
 ```
-Day 1 上午  🟫 基建
-  Docker Compose 调通 PG/Redis/MinIO + healthcheck
-  CI 管线跑通 lint + typecheck
+┌────────────────────────────────────────────────────────────┐
+│            🔒 PM 边界执法流程 (不可绕过)                      │
+├────────────────────────────────────────────────────────────┤
+│                                                            │
+│  1. 开发者写完代码                                          │
+│     → 开发者自己跑 lint + typecheck + 单元测试              │
+│     → 开发者确认功能可用                                    │
+│     → 开发者不能自己批准提交                                 │
+│                                                            │
+│  2. 切换到 🔷 项目经理                                     │
+│     → PM 独立检查边界合规 (不信任开发者自述)                 │
+│     → 逐项过边界检查卡 (铁律 1-7 + 反模式扫描)              │
+│     → 逐文件检查 import 方向                                │
+│     → grep 搜索硬编码密钥/URL/阈值                          │
+│                                                            │
+│  3. PM 裁决                                                │
+│     ├── 🛑 有违规 → 退回开发者修复 → 回到步骤 2             │
+│     └── ✅ 全部通过 → 派审查者子 Agent                       │
+│                                                            │
+│  4. 审查者子 Agent 并行执行                                 │
+│     ├── code-reviewer: 质量 + 简洁性                        │
+│     ├── security-reviewer: 安全漏洞                         │
+│     └── silent-failure-hunter: 异常吞没                     │
+│                                                            │
+│  5. PM 复核审查报告                                         │
+│     ├── 🛑 CRITICAL/HIGH → 退回修复 → 回到步骤 2            │
+│     └── ✅ 通过或仅有 MEDIUM/LOW → 批准提交                  │
+│                                                            │
+│  6. PM 批准 → 提交 + 推送                                   │
+│                                                            │
+└────────────────────────────────────────────────────────────┘
 
-Day 1 下午  🟪 数据库
-  Prisma Schema: KnowledgeBase / Document / Chunk 模型
-  Migration 创建 + pgvector 扩展启用
-
-Day 1 傍晚  🔷 架构师 + 🔷 项目经理
-  定义知识库模块接口: IChunkingService / IEmbeddingService / ISearchService
-  拆解 Day 2-7 任务清单 + 依赖关系
-
-Day 2-5    🟦 后端开发者
-  KnowledgeModule CRUD + 文档上传 API
-  DocumentParser + ChunkingService + EmbeddingService
-  SearchService: pgvector 检索 + BM25
-  ChatModule: SSE 流式对话
-
-Day 5-7    🟨 AI 工程师
-  LangChain RAG 管线: 查询改写 → 混合检索 → Rerank
-  多模型网关 fallback 链 + 熔断器
-  Prompt 模板管理
-
-Day 7-10   🟩 前端开发者
-  Chat 界面 (AI Elements Vue): Conversation + Message + PromptInput
-  知识库管理: 上传/列表/状态
-  来源引用: SourcePanel
-
-Day 10-11  🔷 测试者
-  全链路验证: 上传 PDF → 解析 → 提问 → 检查回答含引用
-  AI 输出三层断言: 结构/语义/属性
-  跑 80 条 RAG 评估集, 记录基线
-
-Day 11-12  🔷 审查者
-  派 code-reviewer 独立审查全量代码
-  派 security-reviewer 扫 auth/API 安全
-  派 silent-failure-hunter 扫异常处理
-
-Day 12     🔷 项目经理
-  对照 Phase 1 Done Criteria 逐项验收
-  标记 @abstract-candidate 潜在复用点
-  提交 + 推送
+PM 的独立检查手段 (不依赖开发者自述):
+  grep "import.*\/modules\/" ai/          # AI 引擎不应依赖业务模块
+  grep "import.*Prisma" packages/ui/      # 前端不应导入 ORM 类型
+  grep "sk-\|api_key\|password\s*="       # 硬编码密钥检测
+  grep "import.*\.\.\/\.\.\/"             # 深层相对路径 (可能的跨层调用)
+  grep "console\.log\|\.only("            # 调试残留
+  rg "class \w+Service" --count           # Service 行数 >300 → God Service 嫌疑
 ```
 
-### 0.8 边界执法 · 每次提交前强制执行
-
-> **这条高于一切。铁律不是"建议"，是"不遵守就不许提交"。**
-
-#### 0.8.1 边界检查卡（每次提交前逐项通过）
+#### 0.7.4 开发者角色约束（明确禁止事项）
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│              🔒 提交边界检查卡 (不可跳过)                  │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│ □ 铁律1 边界隔离                                         │
-│   本次改动是否有一个模块 import 了另一个模块的内部实现？      │
-│   ❌ ChatService import PgvectorRepo 直接实现             │
-│   ✅ ChatService import ISearchRepo 抽象接口              │
-│                                                         │
-│ □ 铁律2 依赖倒置                                         │
-│   高层模块是否依赖了低层具体实现？                           │
-│   ❌ AgentService new EmbeddingService()                 │
-│   ✅ AgentService constructor(@Inject('IEmbedding'))      │
-│                                                         │
-│ □ 铁律3 单一变更源                                       │
-│   如果下个 Sprint 要换 Embedding 模型，要动几个文件？        │
-│   ❌ > 2 个文件 → 耦合                                   │
-│   ✅ 1 个文件 (IEmbedding 的新实现)                       │
-│                                                         │
-│ □ 铁律4 接口即合同                                       │
-│   所有跨模块通信的接口/类型是否已在 shared/ 或 interfaces/   │
-│   中定义，而不是各模块各定义一套？                           │
-│                                                         │
-│ □ 铁律5 不可变数据                                       │
-│   是否直接修改了传入参数？                                  │
-│   ❌ entity.status = 'completed'; return entity           │
-│   ✅ return { ...entity, status: 'completed' }            │
-│                                                         │
-│ □ 铁律6 测试安全网                                       │
-│   改动导致已有测试失败了吗？                                │
-│   新增模块有 ≥80% 测试覆盖吗？                              │
-│                                                         │
-│ □ 铁律7 三次原则                                         │
-│   本次改动有没有"第 1 次出现就抽象"的代码？                  │
-│   所有抽象标记是否写了 @abstract-candidate (Seen: N/3)？    │
-│                                                         │
-│ □ 反模式扫描                                             │
-│   有没有出现：循环依赖 / 跨层调用 / 硬编码配置 / God Service  │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
+开发者角色 (🟦🟩🟨🟪🟫) 在写代码时:
+
+  ✅ 可以:
+     - 在自己的目录边界内自由编写代码
+     - 依赖 ai/interfaces/ 中的抽象接口
+     - 依赖 infrastructure/ 中的服务
+     - 依赖 common/ 中的工具
+     - 依赖 packages/shared/ 中的类型和校验
+     - 写单元测试验证自己的代码
+
+  ⛔ 绝对禁止:
+     - 跨模块 import 另一个模块的 Service（如 ChatService → KnowledgeService）
+     - 在 ai/ 目录中 import modules/ 的任何内容
+     - 在前端组件中 import @prisma/client
+     - 硬编码任何密钥/URL/环境相关值
+     - 判断自己的代码"没有违反边界"——这个判断权归 PM
+     - 跳过 PM 直接提交
 ```
 
-#### 0.8.2 违规分级与处置
+#### 0.7.5 角色切换规则
 
-| 级别 | 定义 | 处置 |
-|------|------|------|
-| 🛑 **阻断** | 违反铁律 1-5 中任意一条 | **不许提交**，立即修复 |
-| ⚠️ **警告** | 测试覆盖率 < 80%、第 1 次就抽象 | 标记 @todo，下次提交前修复 |
-| 💡 **建议** | 代码可以更简洁、命名可以更好 | 记录到技术债清单，择机偿还 |
+```
+1. 开发阶段 → 开发者角色自动接管
+   写代码不需要 PM 盯着，在自己的目录边界内自由发挥
+   写完 → 跑 lint + typecheck + 单测（开发者自查功能正确性）
+   ⛔ 开发者不能批准提交
 
-#### 0.8.3 目录边界物理隔离
+2. 写完代码想提交 → 必须切 🔷 PM 角色审批
+   PM 激活 = 切换为"不信任模式"
+   PM 不读开发者自述，全部通过 grep/静态分析独立验证
+   PM 逐项过边界检查卡
+   全部通过 → 派子 Agent 审查
+   有问题 → 退回开发者，标注违规位置
+
+3. 审查者子 Agent 并行执行
+   PM 复核审查报告:
+   ├── 🛑 CRITICAL/HIGH → 退回开发者修复 → 回到步骤 2
+   └── ✅ 全部通过 → PM 批准提交
+
+关键约束:
+  ✅ 我自己切换的角色 (需要全貌):        ❌ 派子 Agent (需要独立视角):
+  🔷 PM — 边界执法 + 提交审批           code-reviewer
+  🔷 架构师 — 接口设计                  security-reviewer
+  🟦🟩🟨🟪🟫 开发者 — 边界内写代码        silent-failure-hunter
+  🔷 测试者 — 单元/集成测试             e2e-runner
+                                        type-design-analyzer
+  
+  每一个子 Agent 的审查报告 → 必须经过 PM 复核 → PM 做最终裁决
+```
+
+#### 0.7.6 标准开发节奏（PM 关口不可绕过）
+
+```
+1. 🔷 架构师 (10 min)
+   定义接口 + 数据流 + 文件清单
+   确定每个文件的目录归属
+
+2. 🟦/🟩/🟨 开发者 (主力, 1-2 天)
+   在边界内写代码
+   写完 → 跑 lint + typecheck + 单测
+   ⛔ 不能自己提交（开发者没有提交权）
+
+3. 🔷 PM 独立执法 (10-15 min)
+   grep 检查 import 方向 → 违规 🛑 退回
+   grep 检查硬编码密钥 → 违规 🛑 退回
+   逐项过边界检查卡（铁律 1-7 + 反模式）
+   全部通过 ✅ → 派子 Agent 审查
+
+4. 🔷 审查者 (并行派子 Agent)
+   code-reviewer + security-reviewer + silent-failure-hunter
+
+5. 🔷 PM 复核审查报告
+   有 CRITICAL/HIGH → 🛑 退回开发者 → 回到步骤 2
+   全部通过 ✅ → PM 批准
+
+6. 🔷 PM 执行提交 + 推送
+   只有 PM 角色可以执行 git commit + git push
+```
+
+### 0.8 PM 边界执法工具 · 提交前强制审批
+
+> **PM 独有权限。开发者不可执行。**
+>
+> 铁律不是"建议"，是"PM 判定不通过就不许提交"。
+
+#### 0.8.1 PM 边界检查卡（PM 逐项执行，不委托开发者）
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│       🔒 PM 边界检查卡 (PM 亲自执行, 不可委托开发者)           │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│ PM 独立检查手段 (不依赖开发者口述):                            │
+│                                                              │
+│ □ 铁律1 边界隔离 — PM 执行:                                   │
+│   rg "import.*from.*\.\.\/modules/" apps/server/src/ai/      │
+│   → 有结果 = 🛑 阻断 (AI 引擎不应依赖业务模块)                │
+│                                                              │
+│ □ 铁律2 依赖倒置 — PM 执行:                                   │
+│   rg "new \w+Service\(\)" apps/server/src/modules/           │
+│   → 有结果 = 人工检查是否直接实例化而非 DI 注入                │
+│                                                              │
+│ □ 铁律3 单一变更源 — PM 提问:                                 │
+│   "本次改动如果下个 Sprint 换 Embedding 模型，改几个文件？"     │
+│   > 2 个文件 → ⚠️ 警告                                       │
+│                                                              │
+│ □ 铁律4 接口即合同 — PM 执行:                                  │
+│   检查新增 API 的 DTO 类型是否在 packages/shared/ 定义         │
+│   检查是否有模块自己定义了相同的类型                             │
+│                                                              │
+│ □ 铁律5 不可变数据 — PM 执行:                                  │
+│   rg "\.status\s*=\s*|\.name\s*=\s*|\.\w+\s*=\s*(?!.*const)"│
+│   → 人工抽查是否有直接修改传入对象                             │
+│                                                              │
+│ □ 铁律6 测试安全网 — PM 检查:                                  │
+│   pnpm test --changed  → 已有测试是否全通过？                  │
+│   新增模块覆盖率 ≥80%？                                        │
+│                                                              │
+│ □ 铁律7 三次原则 — PM 执行:                                    │
+│   rg "@abstract-candidate" → 所有标记的 Seen 是否 ≥3？         │
+│   Seen: 1/3 或 2/3 → ✅ 正常, 不过早抽象                      │
+│   Seen: 3+/3 但未提取 → ⚠️ 警告 (该抽象了)                    │
+│                                                              │
+│ □ 反模式扫描 — PM 执行:                                        │
+│   rg "console\.log|\.only\(|debugger" → 🛑 阻断                │
+│   rg "sk-[a-zA-Z0-9]|api_key\s*=|password\s*=\s*['\"]"       │
+│   → 🛑 阻断 (硬编码密钥)                                      │
+│   逐文件检查 Service 行数 > 300 → God Service 嫌疑             │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+```
+
+#### 0.8.2 违规分级与 PM 处置权
+
+| 级别 | 定义 | PM 处置 |
+|------|------|--------|
+| 🛑 **阻断** | 违反铁律 1-5 中任意一条、硬编码密钥、跨边界 import、AI 引擎依赖业务模块 | **立即退回开发者**，PM 标注违规位置，修复后 PM 重新检查 |
+| ⚠️ **警告** | 测试覆盖率 < 80%、第 1 次就抽象、Service > 300 行 | PM 标记 @todo + @owner，下次提交前修复。同一警告累计 3 次 → 升级为 🛑 |
+| 💡 **建议** | 代码可以更简洁、命名可以更好 | PM 记录到 `项目流程/技术债清单.md`，择机偿还，不阻塞本次提交 |
+
+#### 0.8.3 目录边界物理隔离（PM 的检查地图）
 
 ```
 apps/server/src/
@@ -519,58 +590,65 @@ apps/server/src/
   modules/ → ai/interfaces/ → ai/ 实现
   modules/ → infrastructure/
   common/   谁都不依赖
+
+PM 检查重点 (每次提交前 grep):
   ❌ ai/ → modules/     (AI 引擎不碰业务模块)
   ❌ infrastructure/ → modules/  (基础设施不碰业务)
   ❌ modules/A → modules/B 的内部 Service  (模块间只走接口)
+  ❌ packages/ui/ → @prisma/client  (前端不碰 ORM)
 ```
 
-#### 0.8.4 边界违规示例（开发时我会主动喊停）
+#### 0.8.4 PM 边界执法承诺
+
+```
+PM 的工作不是"相信开发者"，而是"独立验证":
+
+1. 开发者提交代码后，PM 不读开发者的自述
+   → PM 用 grep 独立验证 import 方向
+   → PM 用 grep 独立验证硬编码
+   → PM 逐项过边界检查卡
+
+2. PM 独立判定通过 → 才派子 Agent 审查
+   PM 判定不通过 → 直接退回，不浪费子 Agent Token
+
+3. PM 复核子 Agent 审查报告
+   CRITICAL/HIGH → 退回
+   全部通过 → PM 批准 → 执行提交
+
+4. 如果 PM 自己写出违规代码（在开发者角色下写的）:
+   → 切换到 PM 角色时同样严格检查，不给自己放水
+   → PM 和开发者是同一个人，但 PM 人格不信任开发者人格
+
+5. PM 不会因为"赶进度"跳过任何一项检查
+   如果时间不够 → 延期提交，不降质提交
+```
+
+#### 0.8.5 边界违规示例（PM 的判定依据）
 
 ```typescript
-// ❌ 边界违规 1: ChatModule 直接 import KnowledgeModule 的内部 Service
+// 🛑 阻断: ChatModule 直接 import KnowledgeModule 的内部 Service
 // apps/server/src/modules/chat/chat.service.ts
 import { PgvectorSearchService } from '../knowledge/search/pgvector-search.service'
-//                                 ↑ 这是 knowledge 模块的内部实现！
-// 修复: import { ISearchService } from '@/ai/interfaces'
-//       NestJS DI 注入具体实现，ChatService 只依赖接口
+// PM 判定: 跨模块 import 具体实现，违反铁律 1
+// PM 处置: 🛑 退回。应改为 import { ISearchService } from '@/ai/interfaces'
 
-// ❌ 边界违规 2: AI 引擎依赖业务模块
+// 🛑 阻断: AI 引擎依赖业务模块
 // apps/server/src/ai/rag/search.service.ts
 import { KnowledgeBaseService } from '../../modules/knowledge/knowledge-base.service'
-//                                 ↑ AI 引擎不应该知道业务模块的存在
-// 修复: ISearchService 接口放在 ai/interfaces/,
-//       实现在 modules/knowledge/ 中，通过 DI 注入
+// PM 判定: ai/ 目录反向依赖 modules/，违反目录隔离规则
+// PM 处置: 🛑 退回。接口放 ai/interfaces/，实现在 modules/ 中
 
-// ❌ 边界违规 3: 前端组件直接 import 后端 Prisma 类型
+// 🛑 阻断: 前端组件直接 import ORM 类型
 // packages/ui/src/ai/chat/ChatView.vue
 import type { Message } from '@prisma/client'
-//                           ↑ 前端不应该知道 ORM schema
-// 修复: 类型定义在 packages/shared/src/types/chat.ts
-//       前后端都从 shared 引入
+// PM 判定: 前端侵入后端 ORM 层，违反铁律 4
+// PM 处置: 🛑 退回。类型放 packages/shared/，前后端共享
 
-// ❌ 边界违规 4: 硬编码配置
+// 🛑 阻断: 硬编码密钥
 // apps/server/src/ai/gateway/gateway.ts
 const DEEPSEEK_API_KEY = 'sk-xxxx'
-//                        ↑ 密钥进代码 = 安全事故
-// 修复: process.env.DEEPSEEK_API_KEY, .env 不入库
-```
-
-#### 0.8.5 我的承诺
-
-```
-每个文件写完后:
-  1. 检查 7 条铁律 → 有违反立即改
-  2. 检查 import 方向 → 有逆依赖立即改
-  3. 检查是否有硬编码 → 有立即提取
-
-提交前:
-  1. 过一遍边界检查卡 (8 项全勾)
-  2. 派 code-reviewer 独立审查
-  3. 审查报告中标记 "boundary violation" 的 → 🛑 阻断提交
-
-如果我发现自己在违反边界:
-  → 主动停止，修复后继续
-  → 不会因为"赶进度"跳过一个检查
+// PM 判定: 密钥进代码 = 安全事故
+// PM 处置: 🛑 退回 + 立即轮换已暴露的密钥
 ```
 
 ---
@@ -674,6 +752,10 @@ const DEEPSEEK_API_KEY = 'sk-xxxx'
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
+│  ┌─────────────────────────────────────────────────────────┐ │
+│  │            🔷 PM 边界执法层 (覆盖所有层)                    │ │
+│  │   依赖方向 · import 合规 · 硬编码检测 · 提交审批            │ │
+│  └─────────────────────────────────────────────────────────┘ │
 │                      前端交互层                                │
 │  Vue 3 + TS  │  Pinia  │  AI Elements Vue + Ant Design Vue   │
 │  SSE 流式渲染  │  PWA (Workbox)  │  Tauri v2 (Rust)         │
