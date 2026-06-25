@@ -129,8 +129,8 @@
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │                      前端交互层                                │
-│  Vue 3 + TS  │  Pinia  │  Ant Design Vue  │  SSE 流式渲染    │
-│  PWA (Workbox) │  Tauri v2 (Rust)  │  虚拟列表              │
+│  Vue 3 + TS  │  Pinia  │  AI Elements Vue + Ant Design Vue   │
+│  SSE 流式渲染  │  PWA (Workbox)  │  Tauri v2 (Rust)         │
 ├──────────────────────────────────────────────────────────────┤
 │                      网关 & 接口层                             │
 │  RESTful API  │  SSE  │  WebSocket  │  统一响应体            │
@@ -239,17 +239,33 @@ jarvis/
 │   │   │   │   ├── AForm.vue       #   表单 (校验/提交)
 │   │   │   │   ├── AModal.vue      #   弹窗 (确认/表单)
 │   │   │   │   ├── ATree.vue       #   树形控件 (知识库目录)
-│   │   │   │   └── AUpload.vue     #   文件上传 (分片/进度)
+│   │   │   │   ├── AUpload.vue     #   文件上传 (分片/进度)
+│   │   │   │   └── ADatePicker.vue #   日期选择
 │   │   │   │
-│   │   │   ├── custom/             # Layer 2: shadcn-vue + 自研
-│   │   │   │   ├── ChatBubble/     #   对话气泡 (参考 21st.dev Chat UI)
-│   │   │   │   ├── MarkdownRenderer/ # Markdown 渲染 + 代码高亮
-│   │   │   │   ├── StreamingText/  #   流式打字机效果
-│   │   │   │   ├── FileDropzone/   #   拖拽上传区 (参考 21st Upload)
-│   │   │   │   ├── ModelSelector/  #   模型选择下拉
-│   │   │   │   ├── SourceCitation/ #   知识库来源引用卡片
-│   │   │   │   ├── KnowledgeCard/  #   知识库文档卡片
-│   │   │   │   └── AgentWorkflow/  #   Agent 工作流可视化
+│   │   │   ├── ai/                 # Layer 2: AI Elements Vue 封装
+│   │   │   │   ├── chat/           #   Conversation + Message + PromptInput
+│   │   │   │   │   ├── ChatView.vue        # 对话视图 (组合 Conversation/Message)
+│   │   │   │   │   ├── ChatInput.vue       # 输入框 (封装 PromptInput)
+│   │   │   │   │   └── ChatSuggestions.vue # 快捷建议 (封装 Suggestion)
+│   │   │   │   ├── content/        #   CodeBlock + MessageResponse + Sources
+│   │   │   │   │   ├── ResponseView.vue    # 流式响应视图
+│   │   │   │   │   ├── SourcePanel.vue     # 来源引用面板 (封装 Sources)
+│   │   │   │   │   └── CodeViewer.vue      # 代码展示 (封装 CodeBlock)
+│   │   │   │   ├── reasoning/      #   Reasoning + ChainOfThought
+│   │   │   │   │   ├── ReasoningPanel.vue  # 推理过程面板
+│   │   │   │   │   └── ThoughtChain.vue    # 思维链可视化
+│   │   │   │   ├── tools/          #   Tool + Confirmation
+│   │   │   │   │   ├── ToolCallCard.vue    # 工具调用卡片
+│   │   │   │   │   └── ConfirmDialog.vue   # 工具审批弹窗
+│   │   │   │   └── workflow/       #   Canvas + Node + Edge (VueFlow)
+│   │   │   │       ├── WorkflowCanvas.vue  # Agent 工作流画布
+│   │   │   │       └── AgentNode.vue       # 工作流节点
+│   │   │   │
+│   │   │   ├── custom/             # Layer 2 补充: 项目专属组件
+│   │   │   │   ├── FileDropzone.vue    # 拖拽文件上传 (AI 无此组件)
+│   │   │   │   ├── KnowledgeCard.vue   # 知识库文档卡片
+│   │   │   │   ├── ModelSelector.vue   # 模型选择器 (配合 PromptInput)
+│   │   │   │   └── CheckpointNav.vue   # 对话检查点导航
 │   │   │   │
 │   │   │   ├── themes/             # 主题与设计系统
 │   │   │   │   ├── tokens.css      #   设计 Token (CSS 变量)
@@ -260,8 +276,10 @@ jarvis/
 │   │   │   │   │   └── cyber-terminal.ts
 │   │   │   │   └── StyleProvider.vue
 │   │   │   │
-│   │   │   └── inspiration/        # 设计灵感参考 (21st.dev 等)
-│   │   │       └── README.md       #   保存灵感截图/链接/分析笔记
+│   │   │   └── inspiration/        # 设计灵感笔记
+│   │   │       ├── README.md       #   灵感来源索引
+│   │   │       ├── v0-prompts.md   #   v0.dev 有效 Prompt 记录
+│   │   │       └── screenshots/    #   21st.dev / dribbble 截图
 │   │   └── package.json
 │   │
 │   └── ai-core/                    # 共享 AI 核心逻辑
@@ -284,12 +302,12 @@ jarvis/
 | **前端框架** | Vue 3 + Composition API | 3.5+ | 生态成熟，TS支持好，与Tauri/PWA兼容最佳 |
 | **类型系统** | TypeScript | 5.5+ | 全栈TS，类型安全 |
 | **构建工具** | Vite | 6.x | 极速HMR，Tauri官方推荐 |
-| **CSS 框架** | Tailwind CSS | 3.4+ | 原子化CSS，shadcn-vue 依赖，快速原型 |
+| **CSS 框架** | Tailwind CSS | 3.4+ | 原子化CSS，AI Elements Vue 依赖，快速原型 |
 | **状态管理** | Pinia | 2.x | Vue官方，TS友好 |
 | **UI组件库 (基础层)** | Ant Design Vue | 4.x | 企业级重型组件：表格/表单/弹窗/树/日期 |
-| **UI组件库 (自定义层)** | shadcn-vue | 最新 | Vue版shadcn/ui，产品界面组件：对话/卡片/按钮，源码可控可改 |
-| **动画库** | @vueuse/motion | 最新 | Vue 动画，复现 21st.dev 上的微交互效果 |
-| **设计灵感源** | 21st.dev / v0.dev | — | 设计参考 + 交互模式学习 (非直接依赖) |
+| **UI组件库 (AI层)** | AI Elements Vue | 最新 | **Vue AI 专用组件库**，Vercel AI Elements 的 Vue 移植版，尤雨溪背书。30+ 组件覆盖对话/推理/Canvas/工具调用 |
+| **动画库** | @vueuse/motion | 最新 | Vue 动画，复现设计灵感中的微交互效果 |
+| **设计灵感源** | v0.dev / 21st.dev | — | v0.dev 主用（AI 生成 UI 原型），21st.dev 辅助（浏览高分组件） |
 | **桌面框架** | Tauri | v2 | Rust后端，打包体积~8MB，系统级能力 |
 | **移动方案** | PWA (Vite PWA) | - | 零额外代码，可安装，离线可用 |
 | **后端框架** | NestJS | 10.x | Node.js企业级标准，依赖注入，模块化 |
@@ -327,25 +345,27 @@ App.vue
 │   │
 │   ├── MainContent.vue            # 主对话区域
 │   │   ├── WelcomeScreen.vue      # 欢迎页 (无对话时)
-│   │   ├── ChatArea.vue           # 对话区域
+│   │   ├── ChatView.vue           # 对话视图 (基于 AI Elements Conversation)
 │   │   │   ├── MessageList.vue    # 消息列表
-│   │   │   │   ├── MessageBubble.vue     # 对话气泡
-│   │   │   │   │   ├── UserMessage.vue   # 用户消息
-│   │   │   │   │   └── AIMessage.vue     # AI 回复
-│   │   │   │   │       ├── MarkdownRenderer.vue  # Markdown/代码渲染
-│   │   │   │   │       ├── StreamingText.vue     # 流式打字机效果
-│   │   │   │   │       └── SourceCitation.vue    # 来源引用
-│   │   │   │   └── ScrollAnchor.vue     # 自动滚动锚点
-│   │   │   └── ChatInput.vue      # 输入区
-│   │   │       ├── TextInput.vue  # 文本输入
-│   │   │       ├── FileUploadButton.vue  # 文件上传
-│   │   │       ├── ModelSelector.vue     # 模型切换
-│   │   │       └── SendButton.vue # 发送按钮
-│   │   └── EmptyState.vue         # 无对话时的引导
+│   │   │   │   ├── UserBubble.vue         # 用户消息气泡
+│   │   │   │   └── AIBubble.vue          # AI 回复气泡
+│   │   │   │       ├── ReasoningPanel.vue  # 推理过程 (AI Elements Reasoning)
+│   │   │   │       ├── ThoughtChain.vue    # 思维链 (AI Elements CoT)
+│   │   │   │       ├── ResponseView.vue    # 流式Markdown (AI Elements MessageResponse)
+│   │   │   │       ├── CodeViewer.vue      # 代码块 (AI Elements CodeBlock)
+│   │   │   │       ├── SourcePanel.vue     # 来源引用 (AI Elements Sources)
+│   │   │   │       ├── ToolCallCard.vue    # 工具调用 (AI Elements Tool)
+│   │   │   │       └── ConfirmDialog.vue   # 工具审批 (AI Elements Confirmation)
+│   │   │   └── ScrollAnchor.vue     # 自动滚动锚点
+│   │   └── ChatInput.vue          # 输入区 (基于 AI Elements PromptInput)
+│   │       ├── FileDropzone.vue   # 文件拖拽上传
+│   │       ├── ModelSelector.vue  # 模型切换
+│   │       └── ChatSuggestions.vue # 快捷建议 (AI Elements Suggestion)
 │   │
-│   └── (可选) DetailPanel.vue     # 右侧详情面板
-│       ├── DocumentPreview.vue    # 文档预览 (知识库查看)
-│       └── SourceDetail.vue       # RAG 引用原文查看
+│   └── DetailPanel.vue (可折叠)    # 右侧详情面板
+│       ├── SourceDetail.vue       # RAG 引用原文查看
+│       ├── CheckpointNav.vue      # 对话检查点 (AI Elements Checkpoint)
+│       └── DocumentPreview.vue    # 文档预览
 │
 ├── SettingsModal.vue              # 设置弹窗
 │   ├── StyleSettings.vue          # 风格自定义 (颜色/字体/圆角/间距)
@@ -456,110 +476,149 @@ export const platform = {
 | Worker 卸载 | Web Worker 跑 Token 计算/文本预处理 | 主线程保持 60fps |
 | PWA 缓存 | Workbox (Stale-While-Revalidate) | 二次访问秒开，离线可用 |
 
-### 4.4 双层组件体系：Ant Design Vue + shadcn-vue
+### 4.4 双层组件体系：Ant Design Vue + AI Elements Vue
 
-> **设计决策**: 没有一种组件库能同时完美处理"企业级重型组件"和"产品级自定义 UI"。因此采用**双层策略**。
+> **设计决策**: 没有一种组件库能同时完美处理"企业级重型组件"和"AI 原生交互 UI"。采用**双层策略**，其中 AI Elements Vue（Vercel AI Elements 的 Vue 移植版，尤雨溪背书）作为 AI 层主力。
 
-#### Layer 1: Ant Design Vue (基础设施层 — 20% 的 UI 量)
-
-处理**复杂度高、无差异化的企业交互**：
-- 数据表格 (排序、筛选、分页、行选择)
-- 复杂表单 (校验规则、动态字段、联动)
-- 弹窗/抽屉 (确认流程、表单嵌入)
-- 树形控件 (知识库目录、权限树)
-- 日期/时间选择器
-
-> **原则**: Ant Design Vue 组件用 `A` 前缀二次封装，统一注入样式和行为。不改其源码。
-
-#### Layer 2: shadcn-vue + Tailwind CSS (产品界面层 — 80% 的 UI 量)
-
-处理**决定产品颜值和体验的自定义组件**：
-- 对话气泡、Markdown 渲染器、流式文本动画
-- 文件拖拽上传区、模型选择器、知识库文档卡片
-- Agent 工作流可视化、来源引用卡片
-- 主题切换器、设置面板
-
-> **原则**: shadcn-vue 组件源码直接复制到 `packages/ui/src/custom/`，可随意修改。这是 shadcn 哲学的核心：**你不是在依赖一个库，你是在拥有源码**。
-
-#### 组件分配决策树
+#### 组件体系全景
 
 ```
-这个组件长什么样？
-├── 标准企业表单/表格/弹窗
-│   → Layer 1: Ant Design Vue (AForm / ATable / AModal)
-│       理由: 不需要定制外观，直接用成熟的交互逻辑
-│
-├── 产品界面 (对话/卡片/动画/流式)
-│   → Layer 2: shadcn-vue + Tailwind CSS
-│       理由: 需要高度自定义外观和行为
-│
-└── 不确定/两者之间
-    → 先用 shadcn-vue 快速原型 → 确定后再选
-        理由: shadcn-vue 最大优势是"修改成本低"
+                    Jarvis UI 体系
+                    ─────────────
+    ┌───────────────────┴───────────────────┐
+    │                                       │
+Layer 1: Ant Design Vue              Layer 2: AI Elements Vue
+(基础设施层 ~20% UI 量)              (AI 交互层 ~80% UI 量)
+    │                                       │
+    ├── 表格/数据展示                       ├── Conversation (对话容器)
+    ├── 复杂表单校验                        ├── Message (消息气泡)
+    ├── 弹窗/抽屉                           ├── MessageResponse (流式Markdown)
+    ├── 树形控件                            ├── CodeBlock (代码高亮+复制)
+    ├── 日期选择器                          ├── PromptInput (高级输入框)
+    ├── 文件上传(分片)                      ├── Reasoning + CoT (推理展示)
+    └── 全局通知                            ├── Sources + InlineCitation (引用)
+                                            ├── Tool + Confirmation (工具调用)
+                                            ├── Canvas + Node + Edge (工作流)
+                                            ├── Suggestion (快捷建议)
+                                            ├── Shimmer (加载动画)
+                                            └── Checkpoint (检查点回退)
+
+                    ┌─────────────────────┐
+                    │ 补充自研 (项目专属)  │
+                    │ FileDropzone        │
+                    │ KnowledgeCard       │
+                    │ ModelSelector       │
+                    └─────────────────────┘
 ```
 
-### 4.5 设计灵感工作流：21st.dev 等工具的使用策略
+#### Layer 1: Ant Design Vue (基础设施层)
 
-> **核心理念**: 用 React 生态的繁荣成果反哺 Vue 项目设计。不直接依赖，但充分吸收。
+处理**复杂度高、无差异化的企业交互**。不改源码，用 `A` 前缀二次封装。
 
-#### 灵感来源矩阵
+#### Layer 2: AI Elements Vue (AI 交互层)
 
-| 平台 | 用途 | 使用方式 | 频率 |
+##### 为什么用它而不是裸 shadcn-vue？
+
+AI Elements Vue 是基于 shadcn-vue 构建的 **AI 专用组件库**。它提供了 shadcn-vue 没有的能力：
+
+| 能力 | 裸 shadcn-vue | AI Elements Vue |
+|------|:--:|:--:|
+| 对话容器 (Conversation) | 需自研 | ✅ 开箱即用，流式感知 |
+| 消息气泡 (Message) | 需自研 | ✅ 支持 user/assistant/system/tool 角色 |
+| 流式 Markdown 渲染 | 需自研 ~350 行 | ✅ MessageResponse 内置 |
+| 代码高亮 + 一键复制 | 需自研 | ✅ CodeBlock 内置 |
+| 输入框 (模型选择/附件/发送) | 需自研 ~200 行 | ✅ PromptInput 内置 |
+| 推理过程展示 (Reasoning) | ❌ 未规划 | ✅ **新增能力** |
+| 思维链 (ChainOfThought) | ❌ 未规划 | ✅ **新增能力** |
+| 工具调用可视化 (Tool) | ❌ 未规划 | ✅ **新增能力** |
+| 工具审批 (Confirmation) | ❌ 未规划 | ✅ **新增能力** |
+| 来源引用 (Sources) | 需自研 ~150 行 | ✅ 开箱即用，带行内引用 |
+| Agent 工作流画布 | 需自研 ~500 行 | ✅ Canvas (基于 VueFlow) |
+| 对话检查点 (Checkpoint) | ❌ 未规划 | ✅ **新增能力** |
+| 快捷建议 (Suggestion) | 需自研 | ✅ 开箱即用 |
+
+##### 统计
+
+```
+节省自研代码:  ~1500 行
+新增未规划能力: 5 个
+项目专属组件:  仅剩 3 个 (FileDropzone / KnowledgeCard / ModelSelector)
+```
+
+> **原则**: 和 shadcn 哲学一样，AI Elements Vue 组件通过 CLI 复制到 `packages/ui/src/ai/`，你可以完全控制源码。不是 npm 依赖，是你拥有的代码。
+
+### 4.5 设计灵感工作流：v0.dev + 21st.dev 组合策略
+
+> **核心变化**: 有了 AI Elements Vue 提供 AI 专用组件后，灵感工具的角色从"找可复用的组件"变为"找交互模式和创新方向"。
+
+#### 三源矩阵
+
+| 工具 | 角色 | 使用方式 | 频率 |
 |------|------|---------|------|
-| **21st.dev** | Chat UI、Dashboard、动画组件的设计参考 | 浏览高分组件 → 截图保存灵感 → 分析配色/间距/动效 → 用 shadcn-vue + Tailwind 复现 | 每个新功能开发前 |
-| **v0.dev (Vercel)** | AI 生成 UI 原型 | 描述界面需求 → AI 生成 → 参考布局方案和色彩搭配 | 卡设计方向时 |
-| **dribbble.com** | 视觉方向探索 | 搜索 "AI assistant dashboard" "Chat interface" | 确定整体风格时 |
-| **bolt.new** | 快速原型验证 | 描述功能 → AI 生成完整 Vue 项目 → 提取好的部分 | 功能开发前验证 |
+| **v0.dev** (主力) | AI 快速原型 | 描述功能需求 → AI 生成 React UI → 提取布局/色彩/信息架构 → 用 AI Elements Vue 同名组件复现 | 每个新功能前 |
+| **21st.dev** (辅助) | 组件设计参考 | 浏览高分 Chat UI/Agent Dashboard → 分析交互模式 → 截图保存到 inspiration/ | 需要灵感时 |
+| **dribbble.com** (探索) | 视觉方向 | 搜索 "AI assistant" "Agent workflow" | 确定大方向时 |
 
-#### 实操流程
-
-```
-1. 确定要开发的功能 (例: "知识库文档搜索界面")
-        │
-2. 到 21st.dev 搜索相关组件 (例: "search" "file browser")
-   ┌─────────────────────────────────────────┐
-   │ 搜索 "search" → 发现 15 个组件          │
-   │ 筛选: 高下载量 + 有 Demo 视频           │
-   │ 打开 3 个最佳组件 → 截图保存到          │
-   │   packages/ui/src/inspiration/screenshots/│
-   └─────────────────────────────────────────┘
-        │
-3. 提取设计模式笔记
-   ┌─────────────────────────────────────────┐
-   │ packages/ui/src/inspiration/notes.md    │
-   │                                         │
-   │ ## 搜索体验模式提炼                     │
-   │ - 即时搜索: 输入即搜，无按钮 (3/3 组件) │
-   │ - 结果高亮: 关键词黄色高亮 (2/3)        │
-   │ - 快捷键: Cmd+K 唤起 (业界标准)         │
-   │ - 分组展示: 按文档/类型分组 (值得借鉴)  │
-   │ - 预览卡片: 悬停显示摘要 (竞品没有)     │
-   └─────────────────────────────────────────┘
-        │
-4. 用 shadcn-vue + Tailwind CSS 实现
-   ┌─────────────────────────────────────────┐
-   │ 不是照搬代码，而是:                     │
-   │ ✅ 吸收交互模式 (Cmd+K 唤起)            │
-   │ ✅ 参考信息架构 (分组 + 预览)           │
-   │ ✅ 学习动画节奏 (200ms ease-out)        │
-   │ ❌ 不照搬视觉风格 (保持自己的主题系统)   │
-   └─────────────────────────────────────────┘
-```
-
-#### 具体案例：如何参考 21st.dev 的 Chat UI
+#### 实操流程 (以 Agent 工作流可视化为案例)
 
 ```
-21st.dev 上高分 Chat 组件的共性模式:
-├── 用户消息: 右对齐，深色背景，圆角气泡
-├── AI 消息: 左对齐，浅色背景，Markdown 渲染
-├── 时间分隔线: 居中灰色细线 + 日期标签
-├── 操作按钮: 悬停时显示 (复制/重新生成/点赞)
-├── 滚动行为: 自动滚到底部，但手动上滚时不打断
-└── 输入框: 自适应高度，底部固定，Shift+Enter 换行
+1. 需求: Agent 执行多步任务，需要一个可视化工作流面板
+        │
+2. v0.dev 快速出原型
+   ┌──────────────────────────────────────────────┐
+   │ Prompt: "Agent workflow visualization panel  │
+   │  with nodes for: analyze → search → reason   │
+   │  → execute → evaluate. Show running status,  │
+   │  intermediate results, and human-in-the-loop  │
+   │  checkpoints. Dark theme, sidebar layout."   │
+   │                                              │
+   │ → v0 生成 React 代码 (10秒)                  │
+   │ → 观察: 节点布局、状态颜色编码、              │
+   │   暂停/继续交互、结果预览卡片                │
+   └──────────────────────────────────────────────┘
+        │
+3. 分析核心设计模式
+   ┌──────────────────────────────────────────────┐
+   │ packages/ui/src/inspiration/v0-prompts.md    │
+   │                                              │
+   │ ## Agent Workflow 设计要点                   │
+   │ - 节点状态: running(蓝脉冲) / done(绿勾) /   │
+   │   waiting(橙旋转) / error(红叉)              │
+   │ - 点击节点 → 右侧展开中间结果 (不打断流)     │
+   │ - 人工介入节点 → 醒目边框 + 确认/拒绝按钮    │
+   │ - 失败节点 → 重试按钮 + 自动回退到上一步    │
+   │ - 进度条: 顶部 2/5 steps                    │
+   └──────────────────────────────────────────────┘
+        │
+4. 用 AI Elements Vue 实现
+   ┌──────────────────────────────────────────────┐
+   │ AI Elements Vue 已有:                        │
+   │ Canvas + Node + Edge → 画布和节点            │
+   │ Tool + Confirmation → 工具状态和审批         │
+   │ Reasoning → 推理过程展示                     │
+   │ Checkpoint → 断点续跑                        │
+   │                                              │
+   │ 我们只需:                                    │
+   │ - 组合这些组件                               │
+   │ - 自定义节点样式 (状态颜色)                  │
+   │ - 绑定实时数据 (SSE 推送节点状态)            │
+   │ - 加交互 (点击展开/重试按钮)                 │
+   └──────────────────────────────────────────────┘
+```
 
-→ 这些都是"业界最佳实践"，不需要从零发明
-→ 我们用 Vue 3 的 Composition API 重新实现这些模式
-→ 同时保持 Jarvis 自己的配色和圆角风格
+#### 辅助: 21st.dev 的使用定位
+
+```
+21st.dev 现在的角色:
+├── 搜 "chat" → 看其他开发者怎么设计对话界面
+├── 搜 "agent" → 看 Agent Dashboard 的布局方案
+├── 搜 "workflow" → 看工作流可视化的视觉风格
+└── 搜 "reasoning" → 看推理链的展示形式
+
+但不是:
+├── ❌ 复制代码 (React 不兼容)
+├── ❌ 直接用组件 (不需要，AI Elements Vue 已有)
+└── ❌ 每个都看 (只关注高星 + 有 Demo 视频的)
 ```
 
 ---
