@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Post, Patch, Delete,
+  Controller, Get, Post, Patch, Delete, Inject,
   Body, Param, Query, Req, UploadedFile, UseInterceptors, UseGuards,
 } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
@@ -18,9 +18,9 @@ interface JwtRequest extends Request {
 @UseGuards(AuthGuard('jwt'))
 export class KnowledgeController {
   constructor(
-    private readonly knowledgeService: KnowledgeService,
-    private readonly documentService: DocumentService,
-    private readonly searchService: SearchService,
+    @Inject(KnowledgeService) private readonly knowledgeService: KnowledgeService,
+    @Inject(DocumentService) private readonly documentService: DocumentService,
+    @Inject(SearchService) private readonly searchService: SearchService,
   ) {}
 
   @Post('bases')

@@ -1,9 +1,9 @@
-import { Controller, Get, Post, Delete, Body, Param } from '@nestjs/common'
+import { Controller, Get, Post, Delete, Body, Param, Inject } from '@nestjs/common'
 import { ScheduleService } from './schedule.service'
 
 @Controller('schedule')
 export class ScheduleController {
-  constructor(private readonly scheduleService: ScheduleService) {}
+  constructor(@Inject(ScheduleService) private readonly scheduleService: ScheduleService) {}
 
   @Post('parse')
   parse(@Body() body: { text: string }) {

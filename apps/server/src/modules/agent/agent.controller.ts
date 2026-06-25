@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Param, Req, Res, Logger, UseGuards } from '@nestjs/common'
+import { Controller, Post, Get, Body, Param, Req, Res, Logger, UseGuards, Inject } from '@nestjs/common'
 import { AuthGuard } from '@nestjs/passport'
 import type { Request, Response } from 'express'
 import { AgentService } from './agent.service'
@@ -12,7 +12,7 @@ interface JwtRequest extends Request {
 export class AgentController {
   private readonly logger = new Logger(AgentController.name)
 
-  constructor(private readonly agentService: AgentService) {}
+  constructor(@Inject(AgentService) private readonly agentService: AgentService) {}
 
   @Post()
   create(

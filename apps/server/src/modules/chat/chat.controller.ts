@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Req, Res, Param, Logger, UseGuards } from '@nestjs/common'
+import { Controller, Post, Get, Body, Req, Res, Param, Logger, UseGuards, Inject } from '@nestjs/common'
 import { AuthGuard } from '@nestjs/passport'
 import type { Request, Response } from 'express'
 import { ChatService } from './chat.service'
@@ -14,8 +14,8 @@ export class ChatController {
   private readonly logger = new Logger(ChatController.name)
 
   constructor(
-    private readonly chatService: ChatService,
-    private readonly prisma: PrismaService,
+    @Inject(ChatService) private readonly chatService: ChatService,
+    @Inject(PrismaService) private readonly prisma: PrismaService,
   ) {}
 
   @Get('conversations')
