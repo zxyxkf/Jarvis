@@ -232,14 +232,36 @@ jarvis/
 │   │   │   └── validation/         # Zod schemas
 │   │   └── package.json
 │   │
-│   ├── ui/                         # 共享 UI 组件库
+│   ├── ui/                         # 共享 UI 组件库 (双层体系)
 │   │   ├── src/
-│   │   │   ├── ChatBubble/         # 对话气泡
-│   │   │   ├── MarkdownRenderer/   # Markdown 渲染
-│   │   │   ├── StreamingText/      # 流式文本动画
-│   │   │   ├── FileUpload/         # 文件上传
-│   │   │   ├── ModelSelector/      # 模型选择器
-│   │   │   └── StyleProvider/      # 主题/风格配置
+│   │   │   ├── base/               # Layer 1: Ant Design Vue 封装
+│   │   │   │   ├── ATable.vue      #   表格 (排序/筛选/分页)
+│   │   │   │   ├── AForm.vue       #   表单 (校验/提交)
+│   │   │   │   ├── AModal.vue      #   弹窗 (确认/表单)
+│   │   │   │   ├── ATree.vue       #   树形控件 (知识库目录)
+│   │   │   │   └── AUpload.vue     #   文件上传 (分片/进度)
+│   │   │   │
+│   │   │   ├── custom/             # Layer 2: shadcn-vue + 自研
+│   │   │   │   ├── ChatBubble/     #   对话气泡 (参考 21st.dev Chat UI)
+│   │   │   │   ├── MarkdownRenderer/ # Markdown 渲染 + 代码高亮
+│   │   │   │   ├── StreamingText/  #   流式打字机效果
+│   │   │   │   ├── FileDropzone/   #   拖拽上传区 (参考 21st Upload)
+│   │   │   │   ├── ModelSelector/  #   模型选择下拉
+│   │   │   │   ├── SourceCitation/ #   知识库来源引用卡片
+│   │   │   │   ├── KnowledgeCard/  #   知识库文档卡片
+│   │   │   │   └── AgentWorkflow/  #   Agent 工作流可视化
+│   │   │   │
+│   │   │   ├── themes/             # 主题与设计系统
+│   │   │   │   ├── tokens.css      #   设计 Token (CSS 变量)
+│   │   │   │   ├── presets/        #   预设主题
+│   │   │   │   │   ├── chatgpt-dark.ts
+│   │   │   │   │   ├── jarvis-blue.ts
+│   │   │   │   │   ├── notion-light.ts
+│   │   │   │   │   └── cyber-terminal.ts
+│   │   │   │   └── StyleProvider.vue
+│   │   │   │
+│   │   │   └── inspiration/        # 设计灵感参考 (21st.dev 等)
+│   │   │       └── README.md       #   保存灵感截图/链接/分析笔记
 │   │   └── package.json
 │   │
 │   └── ai-core/                    # 共享 AI 核心逻辑
@@ -262,8 +284,12 @@ jarvis/
 | **前端框架** | Vue 3 + Composition API | 3.5+ | 生态成熟，TS支持好，与Tauri/PWA兼容最佳 |
 | **类型系统** | TypeScript | 5.5+ | 全栈TS，类型安全 |
 | **构建工具** | Vite | 6.x | 极速HMR，Tauri官方推荐 |
+| **CSS 框架** | Tailwind CSS | 3.4+ | 原子化CSS，shadcn-vue 依赖，快速原型 |
 | **状态管理** | Pinia | 2.x | Vue官方，TS友好 |
-| **UI组件库** | Ant Design Vue | 4.x | 企业级，组件完整，可自定义主题 |
+| **UI组件库 (基础层)** | Ant Design Vue | 4.x | 企业级重型组件：表格/表单/弹窗/树/日期 |
+| **UI组件库 (自定义层)** | shadcn-vue | 最新 | Vue版shadcn/ui，产品界面组件：对话/卡片/按钮，源码可控可改 |
+| **动画库** | @vueuse/motion | 最新 | Vue 动画，复现 21st.dev 上的微交互效果 |
+| **设计灵感源** | 21st.dev / v0.dev | — | 设计参考 + 交互模式学习 (非直接依赖) |
 | **桌面框架** | Tauri | v2 | Rust后端，打包体积~8MB，系统级能力 |
 | **移动方案** | PWA (Vite PWA) | - | 零额外代码，可安装，离线可用 |
 | **后端框架** | NestJS | 10.x | Node.js企业级标准，依赖注入，模块化 |
@@ -430,7 +456,115 @@ export const platform = {
 | Worker 卸载 | Web Worker 跑 Token 计算/文本预处理 | 主线程保持 60fps |
 | PWA 缓存 | Workbox (Stale-While-Revalidate) | 二次访问秒开，离线可用 |
 
+### 4.4 双层组件体系：Ant Design Vue + shadcn-vue
+
+> **设计决策**: 没有一种组件库能同时完美处理"企业级重型组件"和"产品级自定义 UI"。因此采用**双层策略**。
+
+#### Layer 1: Ant Design Vue (基础设施层 — 20% 的 UI 量)
+
+处理**复杂度高、无差异化的企业交互**：
+- 数据表格 (排序、筛选、分页、行选择)
+- 复杂表单 (校验规则、动态字段、联动)
+- 弹窗/抽屉 (确认流程、表单嵌入)
+- 树形控件 (知识库目录、权限树)
+- 日期/时间选择器
+
+> **原则**: Ant Design Vue 组件用 `A` 前缀二次封装，统一注入样式和行为。不改其源码。
+
+#### Layer 2: shadcn-vue + Tailwind CSS (产品界面层 — 80% 的 UI 量)
+
+处理**决定产品颜值和体验的自定义组件**：
+- 对话气泡、Markdown 渲染器、流式文本动画
+- 文件拖拽上传区、模型选择器、知识库文档卡片
+- Agent 工作流可视化、来源引用卡片
+- 主题切换器、设置面板
+
+> **原则**: shadcn-vue 组件源码直接复制到 `packages/ui/src/custom/`，可随意修改。这是 shadcn 哲学的核心：**你不是在依赖一个库，你是在拥有源码**。
+
+#### 组件分配决策树
+
+```
+这个组件长什么样？
+├── 标准企业表单/表格/弹窗
+│   → Layer 1: Ant Design Vue (AForm / ATable / AModal)
+│       理由: 不需要定制外观，直接用成熟的交互逻辑
+│
+├── 产品界面 (对话/卡片/动画/流式)
+│   → Layer 2: shadcn-vue + Tailwind CSS
+│       理由: 需要高度自定义外观和行为
+│
+└── 不确定/两者之间
+    → 先用 shadcn-vue 快速原型 → 确定后再选
+        理由: shadcn-vue 最大优势是"修改成本低"
+```
+
+### 4.5 设计灵感工作流：21st.dev 等工具的使用策略
+
+> **核心理念**: 用 React 生态的繁荣成果反哺 Vue 项目设计。不直接依赖，但充分吸收。
+
+#### 灵感来源矩阵
+
+| 平台 | 用途 | 使用方式 | 频率 |
+|------|------|---------|------|
+| **21st.dev** | Chat UI、Dashboard、动画组件的设计参考 | 浏览高分组件 → 截图保存灵感 → 分析配色/间距/动效 → 用 shadcn-vue + Tailwind 复现 | 每个新功能开发前 |
+| **v0.dev (Vercel)** | AI 生成 UI 原型 | 描述界面需求 → AI 生成 → 参考布局方案和色彩搭配 | 卡设计方向时 |
+| **dribbble.com** | 视觉方向探索 | 搜索 "AI assistant dashboard" "Chat interface" | 确定整体风格时 |
+| **bolt.new** | 快速原型验证 | 描述功能 → AI 生成完整 Vue 项目 → 提取好的部分 | 功能开发前验证 |
+
+#### 实操流程
+
+```
+1. 确定要开发的功能 (例: "知识库文档搜索界面")
+        │
+2. 到 21st.dev 搜索相关组件 (例: "search" "file browser")
+   ┌─────────────────────────────────────────┐
+   │ 搜索 "search" → 发现 15 个组件          │
+   │ 筛选: 高下载量 + 有 Demo 视频           │
+   │ 打开 3 个最佳组件 → 截图保存到          │
+   │   packages/ui/src/inspiration/screenshots/│
+   └─────────────────────────────────────────┘
+        │
+3. 提取设计模式笔记
+   ┌─────────────────────────────────────────┐
+   │ packages/ui/src/inspiration/notes.md    │
+   │                                         │
+   │ ## 搜索体验模式提炼                     │
+   │ - 即时搜索: 输入即搜，无按钮 (3/3 组件) │
+   │ - 结果高亮: 关键词黄色高亮 (2/3)        │
+   │ - 快捷键: Cmd+K 唤起 (业界标准)         │
+   │ - 分组展示: 按文档/类型分组 (值得借鉴)  │
+   │ - 预览卡片: 悬停显示摘要 (竞品没有)     │
+   └─────────────────────────────────────────┘
+        │
+4. 用 shadcn-vue + Tailwind CSS 实现
+   ┌─────────────────────────────────────────┐
+   │ 不是照搬代码，而是:                     │
+   │ ✅ 吸收交互模式 (Cmd+K 唤起)            │
+   │ ✅ 参考信息架构 (分组 + 预览)           │
+   │ ✅ 学习动画节奏 (200ms ease-out)        │
+   │ ❌ 不照搬视觉风格 (保持自己的主题系统)   │
+   └─────────────────────────────────────────┘
+```
+
+#### 具体案例：如何参考 21st.dev 的 Chat UI
+
+```
+21st.dev 上高分 Chat 组件的共性模式:
+├── 用户消息: 右对齐，深色背景，圆角气泡
+├── AI 消息: 左对齐，浅色背景，Markdown 渲染
+├── 时间分隔线: 居中灰色细线 + 日期标签
+├── 操作按钮: 悬停时显示 (复制/重新生成/点赞)
+├── 滚动行为: 自动滚到底部，但手动上滚时不打断
+└── 输入框: 自适应高度，底部固定，Shift+Enter 换行
+
+→ 这些都是"业界最佳实践"，不需要从零发明
+→ 我们用 Vue 3 的 Composition API 重新实现这些模式
+→ 同时保持 Jarvis 自己的配色和圆角风格
+```
+
 ---
+
+## 5. 后端服务层
 
 ## 5. 后端服务层
 
