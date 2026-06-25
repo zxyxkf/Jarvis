@@ -3,9 +3,9 @@ import { DropdownMenuSeparator } from 'reka-ui'
 </script>
 
 <template>
-  <DropdownMenuSeparator class="-mx-1 my-1 h-px bg-muted" />
+  <DropdownMenuSeparator class="dm-sep" />
 </template>
 
-<style scoped>
-.bg-muted{background:var(--color-border-light)}
+<style>
+.dm-sep { height: 1px !important; background: var(--color-border-light) !important; margin: 4px -4px !important }
 </style>
