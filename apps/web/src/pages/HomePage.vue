@@ -94,7 +94,7 @@ function handleSend(text: string) {
             rows="1"
             :disabled="isStreaming"
             @keydown="(e: KeyboardEvent) => { if (e.key === 'Enter' && !e.shiftKey && !isStreaming) { e.preventDefault(); handleSend(inputText) } }"
-            @input="($el.target as HTMLTextAreaElement).style.height = 'auto'; ($el.target as HTMLTextAreaElement).style.height = Math.min($el.target.scrollHeight, 150) + 'px'"
+            @input="(e: Event) => { const t = e.target as HTMLTextAreaElement; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 300) + 'px' }"
           />
           <button v-if="!isStreaming" class="send-btn" :disabled="!inputText.trim()" @click="handleSend(inputText)">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
@@ -127,7 +127,7 @@ function handleSend(text: string) {
 .welcome-j { color:var(--color-accent); font-size:30px; font-weight:800 }
 .welcome-title { font-size:32px; font-weight:700; color:var(--color-text-primary); margin:0 0 8px }
 .welcome-sub { color:var(--color-text-muted); font-size:15px; margin:0 }
-.messages { flex:1; overflow-y:auto; padding:24px 32px }
+.messages { flex:1; overflow-y:auto; padding:24px 32px 0 }
 .message-group { margin-bottom:24px }
 .msg-row { display:flex }
 .msg-row.user { justify-content:flex-end }
@@ -140,8 +140,8 @@ function handleSend(text: string) {
 .citations { margin-top:8px; padding-top:8px; border-top:1px solid var(--color-border-light); display:flex; flex-wrap:wrap; gap:6px; align-items:center }
 .citations-label { font-size:11px; color:var(--color-text-muted) }
 .cite-badge { font-size:11px; padding:2px 8px; background:var(--color-bg-hover); border-radius:6px; color:var(--color-text-secondary); cursor:help }
-.input-bar { padding:16px 32px 24px; border-top:1px solid var(--color-border-light); background:var(--color-bg-primary) }
-.input-wrapper { width:100%; display:flex; gap:0; background:var(--color-bg-tertiary); border:1px solid var(--color-border); border-radius:16px; padding:8px 8px 8px 20px; transition:border-color .2s }
+.input-bar { padding:16px 24px 24px; border-top:1px solid var(--color-border-light); background:var(--color-bg-primary); display:flex }
+.input-wrapper { flex:1; display:flex; align-items:flex-end; background:var(--color-bg-tertiary); border:1px solid var(--color-border); border-radius:16px; padding:8px 10px 8px 18px; transition:border-color .2s }
 .input-wrapper:focus-within { border-color:var(--color-accent); box-shadow:0 2px 16px rgba(16,163,127,.1) }
 .chat-input { flex:1; background:transparent; border:none; padding:10px 0; font-size:15px; color:var(--color-text-primary); outline:none; resize:none; max-height:180px; line-height:1.55; font-family:inherit }
 .chat-input::placeholder { color:var(--color-text-muted); opacity:.6 }
