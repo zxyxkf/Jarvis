@@ -10,7 +10,7 @@
     "dev:server": "pnpm --filter @jarvis/server dev",
     "dev:desktop": "pnpm --filter @jarvis/desktop tauri dev",
     "build": "turbo build",
-    "lint": "ESLINT_USE_FLAT_CONFIG=false turbo lint",
+    "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "test": "turbo test",
     "test:e2e": "pnpm --filter @jarvis/web test:e2e",
@@ -24,10 +24,10 @@
     "clean": "rimraf node_modules apps/*/node_modules packages/*/node_modules"
   },
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^8.0.0",
-    "@typescript-eslint/parser": "^8.0.0",
-    "eslint": "^9.0.0",
-    "eslint-plugin-vue": "^9.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.62.0",
+    "@typescript-eslint/parser": "^8.62.0",
+    "eslint": "^8.57.1",
+    "eslint-plugin-vue": "^9.33.0",
     "prettier": "^3.3.0",
     "rimraf": "^6.0.0",
     "turbo": "^2.0.0",

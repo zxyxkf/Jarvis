@@ -29,7 +29,7 @@ export class SearchService implements ISearchService {
       metadata: string | null
     }
 
-    const results = await this.prisma.$queryRawUnsafe<RawSearchRow[]>(
+    const results = (await this.prisma.$queryRawUnsafe(
       `SELECT
         c.id,
         c.content,
@@ -48,7 +48,7 @@ export class SearchService implements ISearchService {
       options.knowledgeBaseId,
       minScore,
       topK,
-    )
+    )) as RawSearchRow[]
 
     return results.map((r: RawSearchRow) => ({
       chunkId: r.id,
@@ -89,7 +89,7 @@ export class SearchService implements ISearchService {
       score: number
     }
 
-    const results = await this.prisma.$queryRawUnsafe<KeywordRow[]>(
+    const results = (await this.prisma.$queryRawUnsafe(
       `SELECT
         c.id, c.content, c."documentId" as document_id,
         d."fileName" as file_name,
@@ -106,7 +106,7 @@ export class SearchService implements ISearchService {
       query,
       options.knowledgeBaseId,
       topK,
-    )
+    )) as KeywordRow[]
 
     return results.map((r: KeywordRow) => ({
       chunkId: r.id,
