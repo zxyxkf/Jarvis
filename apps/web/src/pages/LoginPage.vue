@@ -3,6 +3,13 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
+// Stable dot positions — generated once, survives re-renders
+const dots = Array.from({ length: 20 }, () => ({
+  left: Math.random() * 100,
+  top: Math.random() * 100,
+  delay: Math.random() * 3,
+}))
+
 const auth = useAuthStore()
 const router = useRouter()
 const email = ref('')
@@ -31,7 +38,7 @@ async function handleSubmit() {
 
 <template>
   <div class="login-page">
-    <div class="bg-dots"><div v-for="i in 20" :key="i" class="dot" :style="{left:`${Math.random()*100}%`,top:`${Math.random()*100}%`,animationDelay:`${Math.random()*3}s`}" /></div>
+    <div class="bg-dots"><div v-for="d in dots" :key="d.left+d.top" class="dot" :style="{left:`${d.left}%`,top:`${d.top}%`,animationDelay:`${d.delay}s`}" /></div>
 
     <div class="card">
       <div class="card-header">
