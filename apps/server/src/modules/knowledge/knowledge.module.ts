@@ -5,6 +5,7 @@ import { DocumentService } from './services/document.service'
 import { ChunkingService } from './services/chunking.service'
 import { EmbeddingService } from './services/embedding.service'
 import { SearchService } from './services/search.service'
+import { DocumentParserService } from './services/document-parser.service'
 import { EMBEDDING_SERVICE, SEARCH_SERVICE } from '@/ai/interfaces'
 
 @Module({
@@ -12,13 +13,13 @@ import { EMBEDDING_SERVICE, SEARCH_SERVICE } from '@/ai/interfaces'
   providers: [
     KnowledgeService,
     DocumentService,
+    DocumentParserService,
     ChunkingService,
     EmbeddingService,
     SearchService,
-    // Bind interface implementations
     { provide: EMBEDDING_SERVICE, useExisting: EmbeddingService },
     { provide: SEARCH_SERVICE, useExisting: SearchService },
   ],
-  exports: [SearchService, EmbeddingService],
+  exports: [SearchService, EmbeddingService, DocumentService],
 })
 export class KnowledgeModule {}

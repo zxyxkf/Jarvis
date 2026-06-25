@@ -3,6 +3,7 @@ import { PrismaService } from '@/infrastructure/database/prisma.service'
 import { StorageService } from '@/infrastructure/storage/storage.service'
 import { ChunkingService } from './chunking.service'
 import { EmbeddingService } from './embedding.service'
+import { DocumentParserService } from './document-parser.service'
 
 @Injectable()
 export class DocumentService {
@@ -13,6 +14,7 @@ export class DocumentService {
     private readonly storage: StorageService,
     private readonly chunkingService: ChunkingService,
     private readonly embeddingService: EmbeddingService,
+    private readonly parserService: DocumentParserService,
   ) {}
 
   async upload(
@@ -113,30 +115,8 @@ export class DocumentService {
   }
 
   private async extractText(buffer: Buffer, mimetype: string): Promise<string> {
-    // Simple text extraction for now
-    if (mimetype === 'text/plain' || mimetype === 'text/markdown') {
-      return buffer.toString('utf-8')
-    }
-
-    if (mimetype === 'application/pdf') {
-      // TODO: Phase 1 — integrate pdf-parse for PDF extraction
-      // For now, return placeholder text
-      this.logger.warn('PDF parsing not yet implemented, treating as raw text')
-      return buffer.toString('utf-8')
-    }
-
-    if (
-      mimetype ===
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-      mimetype === 'application/msword'
-    ) {
-      // TODO: Phase 1 — integrate mammoth for Word extraction
-      this.logger.warn('Word parsing not yet implemented, treating as raw text')
-      return buffer.toString('utf-8')
-    }
-
-    // Default: treat as UTF-8 text
-    return buffer.toString('utf-8')
+    const result = await this.parserService.parse(buffer, mimetype)
+    return result.text
   }
 
   async getStatus(documentId: string) {

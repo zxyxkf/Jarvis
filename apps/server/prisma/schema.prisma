@@ -124,9 +124,10 @@ model Message {
 model AgentTask {
   id          String      @id @default(uuid())
   name        String
+  task        String      @default("")
   description String?
   status      AgentStatus @default(PENDING)
-  workflow    Json        // LangGraph workflow definition
+  workflow    Json        // workflow definition JSON
   state       Json?       // execution state (checkpoint support)
   result      Json?       // execution result
   creatorId   String
