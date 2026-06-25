@@ -91,6 +91,8 @@ export const useAuthStore = defineStore('auth', () => {
   return {
     user, accessToken, isLoggedIn,
     login, register, logout, fetchProfile, refreshAccessToken,
-    getAuthHeaders: () => accessToken.value ? { Authorization: `Bearer ${accessToken.value}` } : {},
+    getAuthHeaders: (): Record<string, string> => accessToken.value
+      ? { Authorization: `Bearer ${accessToken.value}` }
+      : {},
   }
 })
