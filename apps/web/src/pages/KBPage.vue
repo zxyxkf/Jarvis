@@ -37,97 +37,117 @@ async function handleUpload(e: Event) {
 </script>
 
 <template>
-  <div class="flex h-screen bg-[var(--color-bg-primary)]">
-    <aside class="w-[280px] shrink-0 bg-[var(--color-bg-secondary)] border-r border-[var(--color-border-light)] p-4 flex flex-col">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-bold">知识库</h2>
-        <button
-          class="w-7 h-7 rounded-lg bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white text-sm font-bold transition-colors"
-          @click="showCreate = true"
-        >+</button>
+  <div class="page">
+    <aside class="sidebar">
+      <h2 class="sidebar-title">Jarvis</h2>
+      <nav class="nav">
+        <RouterLink to="/" class="nav-link">💬 对话</RouterLink>
+        <RouterLink to="/knowledge" class="nav-link active">📚 知识库</RouterLink>
+        <RouterLink to="/agents" class="nav-link">⚡ Agent</RouterLink>
+        <RouterLink to="/settings" class="nav-link">⚙️ 设置</RouterLink>
+      </nav>
+      <div class="flex-1" />
+      <p class="version">Jarvis v0.3</p>
+    </aside>
+
+    <main class="main">
+      <div class="main-header">
+        <h3 class="main-title">知识库</h3>
+        <button class="btn-primary" @click="showCreate = !showCreate">{{ showCreate ? '取消' : '+ 新建' }}</button>
       </div>
 
-      <div v-if="showCreate" class="mb-4 p-3 rounded-xl bg-[var(--color-bg-tertiary)] space-y-2">
-        <input
-          v-model="newName"
-          class="w-full px-3 py-2 bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-lg text-sm outline-none focus:border-[var(--color-accent)]"
-          placeholder="知识库名称"
-          @keydown.enter="handleCreate"
-        />
-        <input
-          v-model="newDesc"
-          class="w-full px-3 py-2 bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-lg text-sm outline-none focus:border-[var(--color-accent)]"
-          placeholder="描述（可选）"
-          @keydown.enter="handleCreate"
-        />
-        <div class="flex gap-2">
-          <button class="flex-1 py-1.5 rounded-lg bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white text-xs font-semibold transition-colors" @click="handleCreate">创建</button>
-          <button class="flex-1 py-1.5 rounded-lg bg-[var(--color-bg-hover)] hover:bg-[var(--color-border)] text-xs transition-colors" @click="showCreate = false">取消</button>
+      <div v-if="showCreate" class="create-card">
+        <input v-model="newName" class="field" placeholder="知识库名称" @keydown.enter="handleCreate" />
+        <input v-model="newDesc" class="field" placeholder="描述（可选）" @keydown.enter="handleCreate" />
+        <div class="create-actions">
+          <button class="btn-primary" @click="handleCreate">创建</button>
+          <button class="btn-secondary" @click="showCreate = false">取消</button>
         </div>
       </div>
 
-      <div v-if="loading" class="text-xs text-[var(--color-text-muted)] py-4">加载中...</div>
-
-      <div v-if="bases.length === 0 && !loading" class="text-xs text-[var(--color-text-muted)] py-4">暂无知识库，点击 + 创建</div>
-
-      <div class="flex-1 overflow-y-auto space-y-1">
+      <div class="kb-grid">
         <button
-          v-for="kb in bases"
-          :key="kb.id"
-          class="w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors"
-          :class="selectedKB === kb.id ? 'bg-[var(--color-accent-muted)] text-[var(--color-accent)]' : 'hover:bg-[var(--color-bg-hover)]'"
+          v-for="kb in bases" :key="kb.id"
+          class="kb-card"
+          :class="{ selected: selectedKB === kb.id }"
           @click="selectKB(kb.id)"
         >
-          <div class="truncate">{{ kb.name }}</div>
-          <div class="text-[10px] text-[var(--color-text-muted)]">{{ kb._count.documents }} 个文档</div>
+          <div class="kb-name">{{ kb.name }}</div>
+          <div class="kb-meta">{{ kb._count.documents }} 个文档</div>
         </button>
       </div>
-    </aside>
 
-    <main class="flex-1 p-6 overflow-y-auto">
-      <div v-if="!selectedKB" class="flex items-center justify-center h-full text-sm text-[var(--color-text-muted)]">
-        选择一个知识库查看文档
-      </div>
-
-      <div v-else>
-        <div class="flex items-center justify-between mb-6">
-          <h3 class="text-base font-semibold">文档列表</h3>
-          <label class="px-4 py-2 rounded-lg bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white text-xs font-semibold cursor-pointer transition-colors">
+      <div v-if="selectedKB" class="doc-section">
+        <div class="doc-header">
+          <h4 class="main-title">文档列表</h4>
+          <label class="btn-primary upload-btn">
             {{ uploading ? '上传中...' : '上传文档' }}
-            <input type="file" class="hidden" accept=".pdf,.docx,.doc,.md,.txt,.xlsx,.csv" :disabled="uploading" @change="handleUpload" />
+            <input type="file" class="hidden-input" accept=".pdf,.docx,.doc,.md,.txt,.xlsx,.csv" :disabled="uploading" @change="handleUpload" />
           </label>
         </div>
 
-        <div v-if="documents.length === 0" class="text-sm text-[var(--color-text-muted)] py-8 text-center">
-          暂无文档
-        </div>
+        <div v-if="documents.length === 0" class="empty">暂无文档</div>
 
-        <div class="space-y-2">
-          <div
-            v-for="doc in documents"
-            :key="doc.id"
-            class="flex items-center justify-between p-3 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border-light)] hover:border-[var(--color-border)] transition-colors"
-          >
-            <div class="flex-1 min-w-0">
-              <div class="text-sm truncate">{{ doc.fileName }}</div>
-              <div class="flex items-center gap-2 mt-0.5">
-                <span class="text-[10px] text-[var(--color-text-muted)] uppercase">{{ doc.fileType }}</span>
-                <span class="text-[10px] text-[var(--color-text-muted)]">{{ (doc.fileSize / 1024).toFixed(0) }} KB</span>
-                <span class="text-[10px] px-1.5 py-0.5 rounded" :class="{
-                  'bg-green-500/15 text-green-400': doc.status === 'COMPLETED',
-                  'bg-yellow-500/15 text-yellow-400': doc.status === 'PROCESSING' || doc.status === 'PENDING',
-                  'bg-red-500/15 text-red-400': doc.status === 'FAILED',
-                }">{{ doc.status === 'COMPLETED' ? '就绪' : doc.status === 'FAILED' ? '失败' : '处理中' }}</span>
-                <span class="text-[10px] text-[var(--color-text-muted)]">{{ doc._count.chunks }} 片段</span>
-              </div>
+        <div v-for="doc in documents" :key="doc.id" class="doc-card">
+          <div class="doc-info">
+            <div class="doc-name">{{ doc.fileName }}</div>
+            <div class="doc-meta">
+              <span class="tag">{{ doc.fileType }}</span>
+              <span class="tag">{{ (doc.fileSize / 1024).toFixed(0) }} KB</span>
+              <span class="tag" :class="'status-' + doc.status.toLowerCase()">{{ doc.status === 'COMPLETED' ? '就绪' : doc.status === 'FAILED' ? '失败' : '处理中' }}</span>
+              <span class="tag">{{ doc._count.chunks }} 片段</span>
             </div>
-            <button
-              class="shrink-0 ml-3 px-2 py-1 rounded text-[10px] text-red-400 hover:bg-red-500/10 transition-colors"
-              @click="deleteDocument(doc.id).then(() => fetchDocuments(selectedKB!))"
-            >删除</button>
           </div>
+          <button class="btn-danger" @click="deleteDocument(doc.id).then(() => fetchDocuments(selectedKB!))">删除</button>
         </div>
       </div>
+
+      <div v-if="!selectedKB && bases.length > 0" class="empty">选择一个知识库查看文档</div>
+      <div v-if="bases.length === 0 && !loading" class="empty">暂无知识库，点击「+ 新建」创建</div>
     </main>
   </div>
 </template>
+
+<style scoped>
+.page { display:flex; width:100vw; height:100vh; background:var(--color-bg-primary); color:var(--color-text-primary); font-family:Inter,system-ui,sans-serif }
+.sidebar { width:260px; flex-shrink:0; background:var(--color-bg-secondary); border-right:1px solid var(--color-border-light); padding:16px; display:flex; flex-direction:column }
+.sidebar-title { font-size:18px; font-weight:700; color:var(--color-text-primary); margin:0 0 20px }
+.nav { display:flex; flex-direction:column; gap:4px; margin-bottom:20px }
+.nav-link { padding:8px 12px; border-radius:8px; font-size:14px; color:var(--color-text-secondary); text-decoration:none; transition:background .15s }
+.nav-link:hover { background:var(--color-bg-hover) }
+.nav-link.active { background:var(--color-accent-muted); color:var(--color-accent) }
+.flex-1 { flex:1 }
+.version { font-size:10px; color:var(--color-text-muted); opacity:.5 }
+.main { flex:1; overflow-y:auto; padding:32px; min-width:0 }
+.main-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:24px }
+.main-title { font-size:16px; font-weight:600; color:var(--color-text-primary); margin:0 }
+.btn-primary { padding:8px 18px; background:var(--color-accent); color:#fff; border:none; border-radius:10px; font-size:13px; font-weight:600; cursor:pointer; transition:background .15s; font-family:inherit }
+.btn-primary:hover { background:var(--color-accent-hover) }
+.btn-secondary { padding:8px 18px; background:var(--color-bg-hover); color:var(--color-text-secondary); border:none; border-radius:10px; font-size:13px; cursor:pointer; font-family:inherit }
+.btn-danger { padding:6px 12px; background:transparent; color:#ef4444; border:none; border-radius:8px; font-size:12px; cursor:pointer; font-family:inherit; transition:background .15s }
+.btn-danger:hover { background:rgba(239,68,68,.1) }
+.create-card { background:var(--color-bg-secondary); border:1px solid var(--color-border-light); border-radius:14px; padding:16px; margin-bottom:24px; display:flex; flex-direction:column; gap:10px }
+.field { width:100%; box-sizing:border-box; padding:10px 14px; background:var(--color-bg-tertiary); border:1px solid var(--color-border); border-radius:10px; font-size:13px; color:var(--color-text-primary); outline:none; font-family:inherit; transition:border-color .15s }
+.field:focus { border-color:var(--color-accent) }
+.create-actions { display:flex; gap:8px }
+.kb-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px; margin-bottom:32px }
+.kb-card { padding:16px; background:var(--color-bg-secondary); border:1px solid var(--color-border-light); border-radius:12px; cursor:pointer; transition:all .15s; text-align:left; font-family:inherit }
+.kb-card:hover { border-color:var(--color-border) }
+.kb-card.selected { border-color:var(--color-accent); background:var(--color-accent-muted) }
+.kb-name { font-size:14px; font-weight:600; color:var(--color-text-primary); margin-bottom:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.kb-meta { font-size:12px; color:var(--color-text-muted) }
+.doc-section { margin-top:8px }
+.doc-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px }
+.upload-btn { cursor:pointer; display:inline-block }
+.hidden-input { display:none }
+.doc-card { display:flex; align-items:center; justify-content:space-between; padding:14px 18px; background:var(--color-bg-secondary); border:1px solid var(--color-border-light); border-radius:12px; margin-bottom:8px; transition:border-color .15s }
+.doc-card:hover { border-color:var(--color-border) }
+.doc-info { flex:1; min-width:0 }
+.doc-name { font-size:14px; color:var(--color-text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:4px }
+.doc-meta { display:flex; gap:6px; flex-wrap:wrap }
+.tag { font-size:11px; padding:2px 8px; border-radius:6px; background:var(--color-bg-hover); color:var(--color-text-muted) }
+.tag.status-completed { background:rgba(16,185,129,.12); color:#10b981 }
+.tag.status-failed { background:rgba(239,68,68,.12); color:#ef4444 }
+.tag.status-pending, .tag.status-processing { background:rgba(245,158,11,.12); color:#f59e0b }
+.empty { text-align:center; color:var(--color-text-muted); font-size:14px; padding:64px 0 }
+</style>

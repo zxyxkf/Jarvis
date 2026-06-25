@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit, Logger } from '@nestjs/common'
+import { Injectable, OnModuleInit, Logger, Inject } from '@nestjs/common'
 import { ToolRegistry } from '@/ai/agent/tool-registry'
 import { KnowledgeSearchTool } from './tools/knowledge-search.tool'
 import { DateTimeTool } from './tools/date-time.tool'

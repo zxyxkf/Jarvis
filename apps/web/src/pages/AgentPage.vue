@@ -25,7 +25,6 @@ async function handleExecute(task: AgentTask) {
   executing.value = task.id
   executionLog.value = []
   const token = localStorage.getItem('accessToken') || ''
-
   try {
     const response = await fetch(`/api/v1/agents/${task.id}/execute`, {
       method: 'POST',
@@ -34,7 +33,6 @@ async function handleExecute(task: AgentTask) {
     const reader = response.body!.getReader()
     const decoder = new TextDecoder()
     let buffer = ''
-
     let done = false
     while (!done) {
       const { done: streamDone, value } = await reader.read()
@@ -47,17 +45,11 @@ async function handleExecute(task: AgentTask) {
         if (line.startsWith('data: ')) {
           try {
             const event = JSON.parse(line.slice(6))
-            if (event.type === 'state') {
-              executionLog.value.push(`#${event.data.iteration} [${event.data.step}] ${event.data.analysis}`)
-            } else if (event.type === 'tool_call') {
-              executionLog.value.push(`🔧 调用工具: ${JSON.stringify(event.data)}`)
-            } else if (event.type === 'tool_result') {
-              executionLog.value.push(`✅ 工具结果: ${JSON.stringify(event.data)}`)
-            } else if (event.type === 'done') {
-              executionLog.value.push('🏁 执行完成')
-            } else if (event.type === 'error') {
-              executionLog.value.push(`❌ 错误: ${event.data}`)
-            }
+            if (event.type === 'state') executionLog.value.push(`#${event.data.iteration} [${event.data.step}] ${event.data.analysis}`)
+            else if (event.type === 'tool_call') executionLog.value.push(`🔧 调用工具: ${JSON.stringify(event.data)}`)
+            else if (event.type === 'tool_result') executionLog.value.push(`✅ 工具结果: ${JSON.stringify(event.data)}`)
+            else if (event.type === 'done') executionLog.value.push('🏁 执行完成')
+            else if (event.type === 'error') executionLog.value.push(`❌ 错误: ${event.data}`)
           } catch { /* skip */ }
         }
       }
@@ -69,78 +61,107 @@ async function handleExecute(task: AgentTask) {
   await fetchTasks()
 }
 
-function statusBadge(status: AgentTask['status']): string {
-  const map: Record<string, string> = {
-    PENDING: 'bg-yellow-500/15 text-yellow-400',
-    RUNNING: 'bg-blue-500/15 text-blue-400',
-    WAITING_HUMAN: 'bg-orange-500/15 text-orange-400',
-    COMPLETED: 'bg-green-500/15 text-green-400',
-    FAILED: 'bg-red-500/15 text-red-400',
-  }
-  return map[status] || ''
+function statusLabel(s: string): string {
+  const m: Record<string,string> = { PENDING:'待执行', RUNNING:'运行中', WAITING_HUMAN:'等待确认', COMPLETED:'已完成', FAILED:'失败' }
+  return m[s] || s
+}
+function statusClass(s: string): string {
+  const m: Record<string,string> = { PENDING:'s-warn', RUNNING:'s-info', COMPLETED:'s-ok', FAILED:'s-err' }
+  return 'status-tag ' + (m[s] || '')
 }
 </script>
 
 <template>
-  <div class="flex h-screen bg-[var(--color-bg-primary)]">
-    <aside class="w-[260px] shrink-0 bg-[var(--color-bg-secondary)] border-r border-[var(--color-border-light)] p-4 flex flex-col">
-      <h2 class="text-lg font-bold mb-4">Jarvis</h2>
-      <nav class="space-y-1 mb-4">
-        <RouterLink to="/" class="block px-3 py-2 rounded-lg text-sm hover:bg-[var(--color-bg-hover)] transition-colors">对话</RouterLink>
-        <RouterLink to="/knowledge" class="block px-3 py-2 rounded-lg text-sm hover:bg-[var(--color-bg-hover)] transition-colors">知识库</RouterLink>
-        <RouterLink to="/agents" class="block px-3 py-2 rounded-lg text-sm bg-[var(--color-accent-muted)] text-[var(--color-accent)] transition-colors">Agent</RouterLink>
+  <div class="page">
+    <aside class="sidebar">
+      <h2 class="sidebar-title">Jarvis</h2>
+      <nav class="nav">
+        <RouterLink to="/" class="nav-link">💬 对话</RouterLink>
+        <RouterLink to="/knowledge" class="nav-link">📚 知识库</RouterLink>
+        <RouterLink to="/agents" class="nav-link active">⚡ Agent</RouterLink>
+        <RouterLink to="/settings" class="nav-link">⚙️ 设置</RouterLink>
       </nav>
       <div class="flex-1" />
-      <div class="text-[10px] text-[var(--color-text-muted)]">Jarvis v0.3</div>
+      <p class="version">Jarvis v0.3</p>
     </aside>
 
-    <main class="flex-1 p-6 overflow-y-auto">
-      <div class="flex items-center justify-between mb-6">
-        <h3 class="text-base font-semibold">Agent 任务</h3>
-        <button class="px-4 py-2 rounded-lg bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white text-xs font-semibold transition-colors" @click="showCreate = !showCreate">
-          {{ showCreate ? '取消' : '新建任务' }}
-        </button>
+    <main class="main">
+      <div class="main-header">
+        <h3 class="main-title">Agent 任务</h3>
+        <button class="btn-primary" @click="showCreate = !showCreate">{{ showCreate ? '取消' : '+ 新建任务' }}</button>
       </div>
 
-      <div v-if="showCreate" class="mb-6 p-4 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border-light)] space-y-3">
-        <input v-model="newName" class="w-full px-3 py-2 bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-lg text-sm outline-none focus:border-[var(--color-accent)]" placeholder="任务名称">
-        <textarea v-model="newTask" rows="3" class="w-full px-3 py-2 bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-lg text-sm outline-none focus:border-[var(--color-accent)] resize-none" placeholder="任务描述，例如：搜索知识库中的技术方案，分析它们的差异，生成对比报告"></textarea>
-        <input v-model="newDesc" class="w-full px-3 py-2 bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-lg text-sm outline-none focus:border-[var(--color-accent)]" placeholder="备注（可选）">
-        <button class="w-full py-2 rounded-lg bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white text-sm font-semibold transition-colors" @click="handleCreate">创建并执行</button>
+      <div v-if="showCreate" class="create-card">
+        <input v-model="newName" class="field" placeholder="任务名称" />
+        <textarea v-model="newTask" rows="3" class="field" placeholder="任务描述，例如：搜索知识库中的技术方案，分析差异，生成对比报告" />
+        <input v-model="newDesc" class="field" placeholder="备注（可选）" />
+        <button class="btn-primary" style="width:100%" @click="handleCreate">创建并执行</button>
       </div>
 
-      <div v-if="loading" class="text-sm text-[var(--color-text-muted)] py-4">加载中...</div>
+      <div v-if="loading" class="empty">加载中...</div>
+      <div v-if="tasks.length === 0 && !loading" class="empty">暂无 Agent 任务</div>
 
-      <div v-if="tasks.length === 0 && !loading" class="text-sm text-[var(--color-text-muted)] py-8 text-center">
-        暂无 Agent 任务
-      </div>
-
-      <div class="space-y-3">
-        <div v-for="task in tasks" :key="task.id" class="p-4 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border-light)]">
-          <div class="flex items-start justify-between">
-            <div class="flex-1 min-w-0">
-              <div class="text-sm font-medium truncate">{{ task.name }}</div>
-              <div v-if="task.task" class="text-xs text-[var(--color-text-muted)] mt-0.5 truncate">{{ task.task }}</div>
-            </div>
-            <span class="shrink-0 ml-3 text-[10px] px-2 py-0.5 rounded" :class="statusBadge(task.status)">{{ task.status }}</span>
+      <div v-for="task in tasks" :key="task.id" class="task-card">
+        <div class="task-header">
+          <div class="task-left">
+            <div class="task-name">{{ task.name }}</div>
+            <div class="task-desc">{{ task.task }}</div>
           </div>
-          <div class="flex items-center gap-3 mt-3">
-            <span class="text-[10px] text-[var(--color-text-muted)]">{{ new Date(task.createdAt).toLocaleString() }}</span>
-            <button
-              v-if="task.status !== 'RUNNING'"
-              class="text-[10px] px-2 py-1 rounded bg-[var(--color-accent-muted)] text-[var(--color-accent)] hover:bg-[var(--color-accent)] hover:text-white transition-colors"
-              :disabled="executing === task.id"
-              @click="handleExecute(task)"
-            >
-              {{ executing === task.id ? '执行中...' : '执行' }}
-            </button>
-          </div>
-
-          <div v-if="executing === task.id && executionLog.length > 0" class="mt-3 p-3 rounded-lg bg-[var(--color-bg-primary)] border border-[var(--color-border)] max-h-[300px] overflow-y-auto font-mono text-xs space-y-1">
-            <div v-for="(line, i) in executionLog" :key="i" class="text-[var(--color-text-secondary)]">{{ line }}</div>
-          </div>
+          <span :class="statusClass(task.status)">{{ statusLabel(task.status) }}</span>
+        </div>
+        <div class="task-footer">
+          <span class="task-time">{{ new Date(task.createdAt).toLocaleString() }}</span>
+          <button
+            v-if="task.status !== 'RUNNING'"
+            class="btn-execute"
+            :disabled="executing === task.id"
+            @click="handleExecute(task)"
+          >{{ executing === task.id ? '执行中...' : '▶ 执行' }}</button>
+        </div>
+        <div v-if="executing === task.id && executionLog.length > 0" class="exec-log">
+          <div v-for="(line, i) in executionLog" :key="i" class="log-line">{{ line }}</div>
         </div>
       </div>
     </main>
   </div>
 </template>
+
+<style scoped>
+.page { display:flex; width:100vw; height:100vh; background:var(--color-bg-primary); color:var(--color-text-primary); font-family:Inter,system-ui,sans-serif }
+.sidebar { width:260px; flex-shrink:0; background:var(--color-bg-secondary); border-right:1px solid var(--color-border-light); padding:16px; display:flex; flex-direction:column }
+.sidebar-title { font-size:18px; font-weight:700; color:var(--color-text-primary); margin:0 0 20px }
+.nav { display:flex; flex-direction:column; gap:4px; margin-bottom:20px }
+.nav-link { padding:8px 12px; border-radius:8px; font-size:14px; color:var(--color-text-secondary); text-decoration:none; transition:background .15s }
+.nav-link:hover { background:var(--color-bg-hover) }
+.nav-link.active { background:var(--color-accent-muted); color:var(--color-accent) }
+.flex-1 { flex:1 }
+.version { font-size:10px; color:var(--color-text-muted); opacity:.5 }
+.main { flex:1; overflow-y:auto; padding:32px; min-width:0 }
+.main-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:24px }
+.main-title { font-size:16px; font-weight:600; color:var(--color-text-primary); margin:0 }
+.btn-primary { padding:8px 18px; background:var(--color-accent); color:#fff; border:none; border-radius:10px; font-size:13px; font-weight:600; cursor:pointer; transition:background .15s; font-family:inherit }
+.btn-primary:hover { background:var(--color-accent-hover) }
+.btn-primary:disabled { opacity:.5; cursor:not-allowed }
+.create-card { background:var(--color-bg-secondary); border:1px solid var(--color-border-light); border-radius:14px; padding:16px; margin-bottom:24px; display:flex; flex-direction:column; gap:10px }
+.field { width:100%; box-sizing:border-box; padding:10px 14px; background:var(--color-bg-tertiary); border:1px solid var(--color-border); border-radius:10px; font-size:13px; color:var(--color-text-primary); outline:none; font-family:inherit; resize:vertical; transition:border-color .15s }
+.field:focus { border-color:var(--color-accent) }
+.task-card { background:var(--color-bg-secondary); border:1px solid var(--color-border-light); border-radius:14px; padding:18px; margin-bottom:12px; transition:border-color .15s }
+.task-card:hover { border-color:var(--color-border) }
+.task-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:12px }
+.task-left { flex:1; min-width:0; margin-right:12px }
+.task-name { font-size:14px; font-weight:600; color:var(--color-text-primary); margin-bottom:4px }
+.task-desc { font-size:12px; color:var(--color-text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.status-tag { font-size:10px; padding:2px 10px; border-radius:6px; flex-shrink:0 }
+.status-tag.s-warn { background:rgba(245,158,11,.12); color:#f59e0b }
+.status-tag.s-info { background:rgba(59,130,246,.12); color:#3b82f6 }
+.status-tag.s-ok { background:rgba(16,185,129,.12); color:#10b981 }
+.status-tag.s-err { background:rgba(239,68,68,.12); color:#ef4444 }
+.task-footer { display:flex; align-items:center; justify-content:space-between }
+.task-time { font-size:12px; color:var(--color-text-muted) }
+.btn-execute { padding:6px 14px; background:var(--color-accent-muted); color:var(--color-accent); border:1px solid transparent; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; transition:all .15s }
+.btn-execute:hover:not(:disabled) { background:var(--color-accent); color:#fff }
+.btn-execute:disabled { opacity:.5; cursor:not-allowed }
+.exec-log { margin-top:14px; padding:14px; background:var(--color-bg-primary); border:1px solid var(--color-border); border-radius:10px; max-height:300px; overflow-y:auto; font-family:monospace; font-size:12px }
+.log-line { color:var(--color-text-secondary); line-height:1.8 }
+.empty { text-align:center; color:var(--color-text-muted); font-size:14px; padding:64px 0 }
+</style>

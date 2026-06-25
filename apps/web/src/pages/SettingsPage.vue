@@ -14,48 +14,71 @@ function handleLogout() {
 </script>
 
 <template>
-  <div class="flex h-screen bg-[var(--color-bg-primary)]">
-    <aside class="w-[260px] shrink-0 bg-[var(--color-bg-secondary)] border-r border-[var(--color-border-light)] p-4 flex flex-col">
-      <h2 class="text-lg font-bold mb-4">Jarvis</h2>
-      <nav class="space-y-1 mb-4">
-        <RouterLink to="/" class="block px-3 py-2 rounded-lg text-sm hover:bg-[var(--color-bg-hover)] transition-colors">对话</RouterLink>
-        <RouterLink to="/knowledge" class="block px-3 py-2 rounded-lg text-sm hover:bg-[var(--color-bg-hover)] transition-colors">知识库</RouterLink>
-        <RouterLink to="/agents" class="block px-3 py-2 rounded-lg text-sm hover:bg-[var(--color-bg-hover)] transition-colors">Agent</RouterLink>
-        <RouterLink to="/settings" class="block px-3 py-2 rounded-lg text-sm bg-[var(--color-accent-muted)] text-[var(--color-accent)] transition-colors">设置</RouterLink>
+  <div class="page">
+    <aside class="sidebar">
+      <h2 class="sidebar-title">Jarvis</h2>
+      <nav class="nav">
+        <RouterLink to="/" class="nav-link">💬 对话</RouterLink>
+        <RouterLink to="/knowledge" class="nav-link">📚 知识库</RouterLink>
+        <RouterLink to="/agents" class="nav-link">⚡ Agent</RouterLink>
+        <RouterLink to="/settings" class="nav-link active">⚙️ 设置</RouterLink>
       </nav>
       <div class="flex-1" />
-      <div class="text-[10px] text-[var(--color-text-muted)]">Jarvis v0.3</div>
+      <p class="version">Jarvis v0.3</p>
     </aside>
 
-    <main class="flex-1 p-8 overflow-y-auto">
-      <h3 class="text-base font-semibold mb-6">设置</h3>
+    <main class="main">
+      <h3 class="main-title">设置</h3>
 
-      <div class="max-w-lg space-y-6">
-        <!-- Profile -->
-        <section class="p-4 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border-light)]">
-          <h4 class="text-sm font-medium mb-3">账户</h4>
-          <div v-if="auth.user" class="space-y-2">
-            <div class="flex justify-between text-sm"><span class="text-[var(--color-text-muted)]">昵称</span><span>{{ auth.user.name }}</span></div>
-            <div class="flex justify-between text-sm"><span class="text-[var(--color-text-muted)]">邮箱</span><span>{{ auth.user.email }}</span></div>
-            <div class="flex justify-between text-sm"><span class="text-[var(--color-text-muted)]">角色</span><span>{{ auth.user.role }}</span></div>
-          </div>
-          <button class="mt-4 px-4 py-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 text-xs font-medium transition-colors" @click="handleLogout">退出登录</button>
-        </section>
+      <section class="section">
+        <h4 class="section-title">账户</h4>
+        <div v-if="auth.user" class="info-grid">
+          <div class="info-row"><span class="info-label">昵称</span><span class="info-value">{{ auth.user.name }}</span></div>
+          <div class="info-row"><span class="info-label">邮箱</span><span class="info-value">{{ auth.user.email }}</span></div>
+          <div class="info-row"><span class="info-label">角色</span><span class="info-value">{{ auth.user.role }}</span></div>
+        </div>
+        <button class="logout-btn" @click="handleLogout">退出登录</button>
+      </section>
 
-        <!-- Theme -->
-        <section class="p-4 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border-light)]">
-          <h4 class="text-sm font-medium mb-3">主题</h4>
-          <div class="grid grid-cols-2 gap-2">
-            <button
-              v-for="(_, key) in theme.presets"
-              :key="key"
-              class="px-3 py-2 rounded-lg text-xs transition-colors"
-              :class="theme.active === key ? 'bg-[var(--color-accent-muted)] text-[var(--color-accent)] border border-[var(--color-accent)]' : 'bg-[var(--color-bg-tertiary)] border border-[var(--color-border)] hover:border-[var(--color-accent)]'"
-              @click="theme.switchTo(key as ThemePreset)"
-            >{{ { 'chatgpt-dark': '暗色', 'notion-light': '极简白' }[key] }}</button>
-          </div>
-        </section>
-      </div>
+      <section class="section">
+        <h4 class="section-title">主题</h4>
+        <div class="theme-grid">
+          <button
+            v-for="(_, key) in theme.presets" :key="key"
+            class="theme-btn"
+            :class="{ active: theme.active === key }"
+            @click="theme.switchTo(key as ThemePreset)"
+          >
+            {{ { 'chatgpt-dark': '🌙 暗色', 'notion-light': '☀️ 极简白' }[key] }}
+          </button>
+        </div>
+      </section>
     </main>
   </div>
 </template>
+
+<style scoped>
+.page { display:flex; width:100vw; height:100vh; background:var(--color-bg-primary); color:var(--color-text-primary); font-family:Inter,system-ui,sans-serif }
+.sidebar { width:260px; flex-shrink:0; background:var(--color-bg-secondary); border-right:1px solid var(--color-border-light); padding:16px; display:flex; flex-direction:column }
+.sidebar-title { font-size:18px; font-weight:700; color:var(--color-text-primary); margin:0 0 20px }
+.nav { display:flex; flex-direction:column; gap:4px; margin-bottom:20px }
+.nav-link { padding:8px 12px; border-radius:8px; font-size:14px; color:var(--color-text-secondary); text-decoration:none; transition:background .15s }
+.nav-link:hover { background:var(--color-bg-hover) }
+.nav-link.active { background:var(--color-accent-muted); color:var(--color-accent) }
+.flex-1 { flex:1 }
+.version { font-size:10px; color:var(--color-text-muted); opacity:.5 }
+.main { flex:1; overflow-y:auto; padding:32px; min-width:0; max-width:640px }
+.main-title { font-size:20px; font-weight:700; color:var(--color-text-primary); margin:0 0 32px }
+.section { background:var(--color-bg-secondary); border:1px solid var(--color-border-light); border-radius:16px; padding:24px; margin-bottom:20px }
+.section-title { font-size:15px; font-weight:600; color:var(--color-text-primary); margin:0 0 16px }
+.info-grid { display:flex; flex-direction:column; gap:10px; margin-bottom:20px }
+.info-row { display:flex; justify-content:space-between; align-items:center; font-size:14px }
+.info-label { color:var(--color-text-muted) }
+.info-value { color:var(--color-text-primary) }
+.logout-btn { padding:8px 20px; background:rgba(239,68,68,.08); color:#ef4444; border:1px solid rgba(239,68,68,.2); border-radius:10px; font-size:13px; font-weight:500; cursor:pointer; font-family:inherit; transition:background .15s }
+.logout-btn:hover { background:rgba(239,68,68,.15) }
+.theme-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px }
+.theme-btn { padding:14px; background:var(--color-bg-tertiary); color:var(--color-text-secondary); border:1px solid var(--color-border); border-radius:12px; font-size:14px; cursor:pointer; font-family:inherit; transition:all .15s }
+.theme-btn:hover { border-color:var(--color-accent) }
+.theme-btn.active { background:var(--color-accent-muted); color:var(--color-accent); border-color:var(--color-accent) }
+</style>
