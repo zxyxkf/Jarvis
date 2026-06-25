@@ -112,8 +112,7 @@ ${toolList}
       { role: 'user' as const, content: analyzePrompt },
     ]
 
-    const result = await this.modelGateway.resolveProvider()
-    const { config } = result
+    const { config } = this.modelGateway.resolveProvider()
     const response = await fetch(`${config.baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {

@@ -11,5 +11,5 @@
       "@jarvis/shared": ["../../packages/shared/src"]
     }
   },
-  "include": ["src", "../../packages/shared/src"]
+  "include": ["src"]
 }
