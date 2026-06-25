@@ -75,14 +75,23 @@ function statusClass(s: string): string {
 <template>
   <div class="page">
     <aside class="sidebar">
-      <h2 class="sidebar-title">Jarvis</h2>
-      <nav class="nav">
-        <RouterLink to="/" class="nav-link">对话</RouterLink>
-        <RouterLink to="/knowledge" class="nav-link">知识库</RouterLink>
-        <RouterLink to="/agents" class="nav-link active">Agent</RouterLink>
-      </nav>
-      <div class="flex-1" />
-      <UserMenu />
+      <div class="sidebar-header">
+        <div class="sidebar-brand">
+          <div class="brand-icon">J</div>
+          <div class="brand-text"><span class="brand-name">Jarvis</span><span class="brand-ver">v0.3</span></div>
+        </div>
+      </div>
+      <div class="sidebar-content">
+        <div class="sidebar-group">
+          <div class="sidebar-group-label">导航</div>
+          <div class="sidebar-menu">
+            <RouterLink to="/" class="sidebar-menu-btn"><span class="menu-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span><span>对话</span></RouterLink>
+            <RouterLink to="/knowledge" class="sidebar-menu-btn"><span class="menu-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg></span><span>知识库</span></RouterLink>
+            <RouterLink to="/agents" class="sidebar-menu-btn active"><span class="menu-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span><span>Agent</span></RouterLink>
+          </div>
+        </div>
+      </div>
+      <div class="sidebar-footer"><UserMenu /></div>
     </aside>
 
     <main class="main">
