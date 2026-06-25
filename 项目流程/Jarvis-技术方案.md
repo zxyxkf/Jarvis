@@ -12,6 +12,7 @@
 
 ## 目录
 
+0. [架构哲学：可迭代性优先](#0-架构哲学可迭代性优先)
 1. [项目定位与愿景](#1-项目定位与愿景)
 2. [产品功能规划](#2-产品功能规划)
 3. [技术架构总览](#3-技术架构总览)
@@ -24,8 +25,209 @@
 10. [工程化与 DevOps](#10-工程化与-devops)
 11. [安全合规](#11-安全合规)
 12. [开发路线图](#12-开发路线图)
-13. [面试竞争优势分析](#13-面试竞争优势分析)
+13. [面试竞争策略](#13-面试竞争策略)
 14. [风险与对策](#14-风险与对策)
+
+---
+
+## 0. 架构哲学：可迭代性优先
+
+> **这条高于所有具体技术选型。宁可少做一个功能，不能破坏一个边界。**
+
+### 0.1 核心问题
+
+软件熵增的典型路径：
+
+```
+第 1 周: 架构清晰 → 第 3 周: "就加一个 if，不改架构了"
+→ 第 6 周: 模块边界模糊 → 第 10 周: 改一个文案要动 8 个文件
+→ 第 12 周: 不敢重构，只敢打补丁 → 项目烂尾
+```
+
+**我们要打破这个循环。** 代价是前期多想 30 分钟，收益是 12 周后依然能自信地增删功能。
+
+### 0.2 六条铁律
+
+#### 铁律 1：单一职责 + 边界隔离
+
+```
+每个模块只做一件事，模块间通过接口通信。
+
+✅ 正确:
+  ChatService 只负责对话编排
+  → 它不直接调 Embedding 模型
+  → 它通过 SearchService 接口获取检索结果
+
+❌ 错误:
+  ChatService 直接 import pgvector 查数据库
+  → 改检索逻辑要改 ChatService
+  → 改数据库要改 ChatService
+  → ChatService 变成黑洞
+```
+
+**检验标准**: 如果我说"把 pgvector 换成 Milvus"，你只需要改 `SearchService` 内部实现，对外接口不变，`ChatService` 一行不动。做不到就是不隔离。
+
+#### 铁律 2：依赖倒置 —— 高层不依赖低层
+
+```
+传统 (错误):  ChatService → PostgreSQL
+依赖倒置 (正确): ChatService → SearchRepository (接口) ← PgvectorSearchRepo (实现)
+
+    高层模块                抽象接口                低层模块
+  ┌──────────┐         ┌──────────────┐        ┌────────────────┐
+  │ ChatSvc  │ ──→    │ ISearchRepo   │   ←── │ PgvectorRepo   │
+  └──────────┘         │ search()      │        └────────────────┘
+                       │ hybridSearch()│        ┌────────────────┐
+                       └──────────────┘   ←── │ MilvusRepo      │
+                                              │ (未来可替换)     │
+                                              └────────────────┘
+```
+
+NestJS 的依赖注入天然支持这套模式。每个 Service 依赖抽象接口，不依赖具体实现。
+
+#### 铁律 3：单一变更源 —— "一个需求只改一处"
+
+| 需求 | 修改范围 | 不改什么 |
+|------|---------|---------|
+| 换个 Embedding 模型 | `EmbeddingService` 1 个文件 | ChunkingService, SearchService |
+| 换个 LLM 厂商 | `ModelGateway` 配置文件 | ChatService, AgentService |
+| 换 UI 组件库 | `packages/ui/` | `apps/web/pages/**`, `apps/server/**` |
+| 加一个 Agent Tool | `tools/` 下新增 1 个文件 + 注册 | AgentService 核心逻辑 |
+| 改数据库表结构 | Prisma Schema + Migration | 所有 Service (Prisma 自动生成类型) |
+| 改 Prompt 模板 | `prompt-templates.ts` 1 个文件 | 对话编排逻辑 |
+
+#### 铁律 4：接口即合同 —— 先定义再实现
+
+```
+任何跨模块通信，先定义接口/类型，再写实现。
+
+前端 ←→ 后端:
+  packages/shared/src/types/api.ts   # 所有 API 请求/响应类型
+  packages/shared/src/validation/    # Zod schemas (前后端共享校验)
+
+Service ←→ Service (后端内部):
+  ai/interfaces/                      # ISearchService, IEmbeddingService, IModelProvider
+
+组件 ←→ 组件 (前端内部):
+  Props/Emits 类型显式定义
+  复杂组件提供 provide/inject 接口
+```
+
+#### 铁律 5：不可变数据流
+
+```
+所有数据传递创建新对象，不修改入参。
+
+✅ const updated = { ...original, field: newValue }
+❌ original.field = newValue
+
+前端:
+  Pinia actions 返回新状态，不直接 mutate
+  computed 派生，不冗余存储
+
+后端:
+  Service 方法返回新对象，不修改传入的 entity
+  Prisma 查询结果视为只读
+```
+
+#### 铁律 6：测试即文档，也是重构安全网
+
+```
+每个 Service 有单元测试 (80%+ 覆盖率)
+  → 测试描述的是"这个模块的契约是什么"
+  → 重构时: 测试通过 = 行为不变 = 安全
+
+关键路径有集成测试:
+  ├── 文档上传 → 解析 → 向量化 → 可检索  (全链路)
+  ├── 用户提问 → 检索 → 生成 → 流式返回  (核心链路)
+  └── Agent 创建 → 执行 → 工具调用 → 完成 (Agent 链路)
+```
+
+### 0.3 模块间通信规范
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    通信方式决策树                             │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  同模块内 Service 之间                                       │
+│  ├── 直接依赖注入 (NestJS DI)                                │
+│  └── 例: ChatService → SearchService                        │
+│                                                             │
+│  跨模块 Service 之间                                         │
+│  ├── 通过抽象接口 (NestJS custom provider)                   │
+│  └── 例: ChatModule 不 import KnowledgeModule               │
+│          而是依赖 ISearchService 接口                        │
+│                                                             │
+│  异步/耗时操作                                               │
+│  ├── BullMQ 事件队列                                         │
+│  └── 例: 文档上传 → DocumentUploadedEvent → Worker 处理      │
+│          主流程不等待，Worker 完成后 WebSocket 推送结果       │
+│                                                             │
+│  前端 ←→ 后端                                                │
+│  ├── RESTful API (CRUD)                                      │
+│  ├── SSE (流式推送: 对话/AI 生成)                            │
+│  ├── WebSocket (实时状态: Agent 执行进度)                     │
+│  └── 所有类型定义在 packages/shared/                         │
+│                                                             │
+│  前端组件之间                                                │
+│  ├── Props/Emits (父子通信)                                  │
+│  ├── provide/inject (跨层级，如主题/模型配置)                  │
+│  └── Pinia Store (全局状态: 用户信息/对话列表)                │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 0.4 新增功能的标准流程 (保证不破窗)
+
+```
+1. 定义接口
+   ├── 后端: 在 ai/interfaces/ 或 modules/xxx/ 下定义 Service 接口
+   ├── 前端: 在 packages/shared/ 下定义 API 类型
+   └── 组件: 先写 Props/Emits 类型
+
+2. 写测试 (TDD)
+   ├── 后端: 写 Service 单元测试 (Mock 外部依赖)
+   ├── 前端: 写组件测试 (渲染 + 交互)
+   └── 集成: 写 E2E 测试骨架
+
+3. 实现
+   ├── 后端: 实现 Service → Controller → Module 注册
+   ├── 前端: 实现组件 → 页面组装 → 路由
+   └── 跨端: 共享逻辑放 packages/，平台差异放 Adapter
+
+4. 验证
+   ├── 单元测试通过
+   ├── 集成测试通过
+   ├── 不破坏已有测试 (回归)
+   └── 代码审查
+
+5. 文档
+   └── 如果加了新的模块间接口 → 更新 docs/
+```
+
+### 0.5 反模式清单 (每次提交前自查)
+
+| 反模式 | 检测信号 | 后果 |
+|--------|---------|------|
+| 循环依赖 | A import B 且 B import A | NestJS 启动报错 / 逻辑死循环 |
+| 跨层直接调用 | Controller 直接调 Repository | 跳过 Service 层校验，不可测试 |
+| 硬编码配置 | 代码里写死 URL/Key/阈值 | 换环境要改代码，不能进配置中心 |
+| God Service | 一个 Service 超 300 行 | 职责不清，改不动 |
+| 模块间耦合 | import 另一个 Module 的内部 Service | 模块重构时雪崩 |
+| 类型重复定义 | 前后端各定义一套相同的类型 | 改一处漏一处 |
+| 忽略错误处理 | `await` 不带 try-catch / 吞异常 | 故障无法追踪 |
+
+### 0.6 重构成本账 (为什么要守铁律)
+
+```
+                                       代码质量高
+每次做正确的架构决策 (+5 分钟)          → 第 12 周加功能: 1 小时
+                                        代码质量烂
+每次偷懒跳过边界隔离   (-5 分钟)         → 第 12 周加功能: 8 小时 + 引入 3 个新 Bug
+
+12 周累计: 正确的慢 = 多花 ~2 小时 | 偷懒的快 = 多花 ~40 小时
+```
 
 ---
 
