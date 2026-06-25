@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+.next/
+.nuxt/
+.output/
+
+# Tauri
+src-tauri/target/
+
+# Environment files (sensitive)
+.env
+.env.local
+.env.production
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Docker volumes
+docker-data/
+
+# Test coverage
+coverage/
+
+# PWA
+**/sw.js
+**/workbox-*.js
+
+# Temporary files
+*.tmp
+.turbo/
