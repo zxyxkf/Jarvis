@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common'
 import { PrismaService } from '@/infrastructure/database/prisma.service'
 import { ModelGateway } from '@/ai/gateway/model-gateway'
 import { SearchService } from '@/modules/knowledge/services/search.service'
+import { SemanticCacheService } from '@/ai/cache/semantic-cache.service'
 import type { ChatMessage } from '@/ai/interfaces'
 
 @Injectable()
@@ -12,6 +13,7 @@ export class ChatService {
     private readonly prisma: PrismaService,
     private readonly modelGateway: ModelGateway,
     private readonly searchService: SearchService,
+    private readonly semanticCache: SemanticCacheService,
   ) {}
 
   /** Build system prompt with RAG context */
@@ -63,7 +65,36 @@ export class ChatService {
       },
     })
 
-    // 3. RAG retrieval (if knowledge base specified)
+    // 3. Check semantic cache (before expensive LLM call)
+    if (options?.knowledgeBaseId) {
+      const cached = await this.semanticCache.get(options.knowledgeBaseId, content)
+      if (cached) {
+        for (const token of cached.response) {
+          yield { type: 'token' as const, data: token }
+        }
+        if (cached.citations) {
+          yield { type: 'citations' as const, data: cached.citations }
+        }
+        yield {
+          type: 'done' as const,
+          data: { tokenCount: Math.ceil(cached.response.length / 2), modelName: '(cached)' },
+        }
+        // Save cached response as assistant message
+        await this.prisma.message.create({
+          data: {
+            conversationId,
+            role: 'assistant',
+            content: cached.response as string,
+            tokenCount: Math.ceil((cached.response as string).length / 2),
+            modelName: `cached:${cached.modelName}`,
+            citations: cached.citations ? JSON.parse(JSON.stringify(cached.citations)) : undefined,
+          },
+        })
+        return
+      }
+    }
+
+    // 4. RAG retrieval (if knowledge base specified)
     let retrievedContext: string | undefined
     const citations: Array<{
       chunkId: string
@@ -143,11 +174,18 @@ export class ChatService {
         conversationId,
         role: 'assistant',
         content: fullResponse,
-        tokenCount: Math.ceil(fullResponse.length / 2), // Rough estimate
+        tokenCount: Math.ceil(fullResponse.length / 2),
         modelName,
         citations: citations.length > 0 ? JSON.parse(JSON.stringify(citations)) : undefined,
       },
     })
+
+    // 6.5 Cache the response for future similar queries
+    if (options?.knowledgeBaseId && fullResponse) {
+      this.semanticCache
+        .set(options.knowledgeBaseId, content, fullResponse, citations, modelName)
+        .catch((err) => this.logger.warn('Semantic cache set failed', err))
+    }
 
     // 7. Update conversation title (use first user message as title)
     const msgCount = await this.prisma.message.count({ where: { conversationId } })

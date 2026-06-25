@@ -1,0 +1,16 @@
+{
+  "name": "Jarvis - AI 智能助手",
+  "short_name": "Jarvis",
+  "description": "企业级 AI 智能效率助手",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#212121",
+  "theme_color": "#10a37f",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
