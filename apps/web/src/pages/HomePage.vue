@@ -7,11 +7,40 @@ const theme = useThemeStore()
 const { messages, isStreaming, sendMessage, abort } = useStreamChat()
 const selectedKB = ref<string | undefined>()
 const inputText = ref('')
+const inputHeight = ref(250)
+const mainRef = ref<HTMLElement | null>(null)
+let dragging = false
+let startY = 0
+let startHeight = 0
 
 function handleSend(text: string) {
   if (!text.trim() || isStreaming.value) return
   sendMessage(text, { knowledgeBaseId: selectedKB.value })
   inputText.value = ''
+}
+
+function onDividerDown(e: MouseEvent) {
+  dragging = true
+  startY = e.clientY
+  startHeight = inputHeight.value
+  document.addEventListener('mousemove', onDividerMove)
+  document.addEventListener('mouseup', onDividerUp)
+  document.body.style.cursor = 'ns-resize'
+  document.body.style.userSelect = 'none'
+}
+
+function onDividerMove(e: MouseEvent) {
+  if (!dragging) return
+  const delta = startY - e.clientY
+  inputHeight.value = Math.max(100, Math.min(600, startHeight + delta))
+}
+
+function onDividerUp() {
+  dragging = false
+  document.removeEventListener('mousemove', onDividerMove)
+  document.removeEventListener('mouseup', onDividerUp)
+  document.body.style.cursor = ''
+  document.body.style.userSelect = ''
 }
 </script>
 
@@ -49,18 +78,16 @@ function handleSend(text: string) {
     </aside>
 
     <!-- Main -->
-    <main class="main">
-      <!-- Welcome -->
-      <div v-if="messages.length === 0" class="welcome">
-        <div class="welcome-logo">
-          <span class="welcome-j">J</span>
+    <main class="main" ref="mainRef">
+      <!-- Messages area — fills remaining space above input -->
+      <div v-if="messages.length === 0" class="messages-fill">
+        <div class="welcome">
+          <div class="welcome-logo"><span class="welcome-j">J</span></div>
+          <h1 class="welcome-title">Jarvis</h1>
+          <p class="welcome-sub">企业级 AI 智能助手</p>
         </div>
-        <h1 class="welcome-title">Jarvis</h1>
-        <p class="welcome-sub">企业级 AI 智能助手</p>
       </div>
-
-      <!-- Messages -->
-      <div v-else class="messages">
+      <div v-else class="messages-fill">
         <div v-for="msg in messages" :key="msg.id" class="message-group">
           <div v-if="msg.role === 'user'" class="msg-row user">
             <div class="msg-bubble user-bubble">{{ msg.content }}</div>
@@ -76,25 +103,26 @@ function handleSend(text: string) {
             </div>
             <div v-if="msg.citations?.length" class="citations">
               <span class="citations-label">📎 来源:</span>
-              <span v-for="cite in msg.citations" :key="cite.chunkId" class="cite-badge" :title="cite.content">
-                {{ cite.documentName }} {{ (cite.score * 100).toFixed(0) }}%
-              </span>
+              <span v-for="cite in msg.citations" :key="cite.chunkId" class="cite-badge" :title="cite.content">{{ cite.documentName }} {{ (cite.score*100).toFixed(0) }}%</span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Input -->
-      <div class="input-bar">
+      <!-- Draggable divider -->
+      <div class="divider" @mousedown="onDividerDown">
+        <div class="divider-grip" />
+      </div>
+
+      <!-- Input panel -->
+      <div class="input-panel" :style="{ height: inputHeight + 'px' }">
         <div class="input-wrapper">
           <textarea
             v-model="inputText"
             class="chat-input"
-            placeholder="输入问题..."
-            rows="1"
+            placeholder="输入问题... (Enter 发送, Shift+Enter 换行)"
             :disabled="isStreaming"
             @keydown="(e: KeyboardEvent) => { if (e.key === 'Enter' && !e.shiftKey && !isStreaming) { e.preventDefault(); handleSend(inputText) } }"
-            @input="(e: Event) => { const t = e.target as HTMLTextAreaElement; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 300) + 'px' }"
           />
           <button v-if="!isStreaming" class="send-btn" :disabled="!inputText.trim()" @click="handleSend(inputText)">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
@@ -122,12 +150,12 @@ function handleSend(text: string) {
 .flex-1 { flex:1 }
 .version { font-size:10px; color:var(--color-text-muted); opacity:.5 }
 .main { flex:1; display:flex; flex-direction:column; min-width:0 }
-.welcome { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center }
+.messages-fill { flex:1; overflow-y:auto; padding:24px 32px 8px }
+.welcome { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100% }
 .welcome-logo { width:64px; height:64px; background:var(--color-accent-muted); border:1px solid var(--color-accent); border-radius:20px; display:flex; align-items:center; justify-content:center; margin-bottom:20px }
 .welcome-j { color:var(--color-accent); font-size:30px; font-weight:800 }
 .welcome-title { font-size:32px; font-weight:700; color:var(--color-text-primary); margin:0 0 8px }
 .welcome-sub { color:var(--color-text-muted); font-size:15px; margin:0 }
-.messages { flex:1; overflow-y:auto; padding:24px 32px 0 }
 .message-group { margin-bottom:24px }
 .msg-row { display:flex }
 .msg-row.user { justify-content:flex-end }
@@ -140,17 +168,20 @@ function handleSend(text: string) {
 .citations { margin-top:8px; padding-top:8px; border-top:1px solid var(--color-border-light); display:flex; flex-wrap:wrap; gap:6px; align-items:center }
 .citations-label { font-size:11px; color:var(--color-text-muted) }
 .cite-badge { font-size:11px; padding:2px 8px; background:var(--color-bg-hover); border-radius:6px; color:var(--color-text-secondary); cursor:help }
-.input-bar { padding:16px 24px 24px; border-top:1px solid var(--color-border-light); background:var(--color-bg-primary); display:flex }
-.input-wrapper { flex:1; display:flex; align-items:flex-end; background:var(--color-bg-tertiary); border:1px solid var(--color-border); border-radius:16px; padding:8px 10px 8px 18px; transition:border-color .2s }
+.divider { height:6px; cursor:ns-resize; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:background .15s }
+.divider:hover { background:var(--color-accent-muted) }
+.divider-grip { width:36px; height:3px; border-radius:2px; background:var(--color-border); transition:background .15s }
+.divider:hover .divider-grip { background:var(--color-accent) }
+.input-panel { flex-shrink:0; display:flex; padding:12px 24px 20px; border-top:1px solid var(--color-border-light); background:var(--color-bg-primary); overflow:hidden }
+.input-wrapper { flex:1; display:flex; align-items:flex-start; background:var(--color-bg-tertiary); border:1px solid var(--color-border); border-radius:16px; padding:10px 10px 10px 18px; transition:border-color .2s }
 .input-wrapper:focus-within { border-color:var(--color-accent); box-shadow:0 2px 16px rgba(16,163,127,.1) }
-.chat-input { flex:1; background:transparent; border:none; padding:10px 0; font-size:15px; color:var(--color-text-primary); outline:none; resize:vertical; min-height:24px; max-height:400px; overflow-y:auto; line-height:1.55; font-family:inherit }
+.chat-input { flex:1; background:transparent; border:none; padding:8px 0; font-size:15px; color:var(--color-text-primary); outline:none; resize:none; line-height:1.55; font-family:inherit; align-self:stretch }
 .chat-input::placeholder { color:var(--color-text-muted); opacity:.6 }
 .chat-input:disabled { opacity:.5 }
-.send-btn { width:42px; height:42px; flex-shrink:0; background:var(--color-accent); border:none; border-radius:10px; color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; margin-left:10px }
+.send-btn { width:42px; height:42px; flex-shrink:0; align-self:flex-end; background:var(--color-accent); border:none; border-radius:10px; color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; margin-left:10px }
 .send-btn:hover:not(:disabled) { background:var(--color-accent-hover); transform:scale(1.05) }
 .send-btn:disabled { opacity:.3; cursor:not-allowed; transform:none }
-.stop-btn { width:38px; height:38px; flex-shrink:0; background:#ef4444; border:none; border-radius:10px; color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; margin-left:8px }
+.stop-btn { width:42px; height:42px; flex-shrink:0; align-self:flex-end; background:#ef4444; border:none; border-radius:10px; color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; margin-left:10px }
 .stop-btn:hover { background:#dc2626 }
-.input-hint { font-size:11px; color:var(--color-text-muted); opacity:.5; margin-top:8px; text-align:center; display:none }
 @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
 </style>
