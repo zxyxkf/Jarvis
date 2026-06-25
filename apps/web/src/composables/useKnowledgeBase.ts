@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { useAuthStore } from '@/stores/auth'
 
 export interface KnowledgeBase {
   id: string
@@ -19,6 +20,11 @@ export interface Document {
   createdAt: string
 }
 
+function authHeaders(): Record<string, string> {
+  const auth = useAuthStore()
+  return auth.getAuthHeaders()
+}
+
 export function useKnowledgeBase() {
   const bases = ref<KnowledgeBase[]>([])
   const documents = ref<Document[]>([])
@@ -26,7 +32,7 @@ export function useKnowledgeBase() {
 
   async function fetchBases() {
     loading.value = true
-    const res = await fetch('/api/v1/knowledge/bases')
+    const res = await fetch('/api/v1/knowledge/bases', { headers: authHeaders() })
     const body = await res.json()
     bases.value = (body.data as KnowledgeBase[]) ?? []
     loading.value = false
@@ -35,7 +41,7 @@ export function useKnowledgeBase() {
   async function createBase(name: string, description?: string) {
     const res = await fetch('/api/v1/knowledge/bases', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ name, description }),
     })
     const body = await res.json()
@@ -44,7 +50,7 @@ export function useKnowledgeBase() {
   }
 
   async function deleteBase(id: string) {
-    await fetch(`/api/v1/knowledge/bases/${id}`, { method: 'DELETE' })
+    await fetch(`/api/v1/knowledge/bases/${id}`, { method: 'DELETE', headers: authHeaders() })
     await fetchBases()
   }
 
@@ -53,19 +59,20 @@ export function useKnowledgeBase() {
     formData.append('file', file)
     const res = await fetch(`/api/v1/knowledge/bases/${baseId}/documents`, {
       method: 'POST',
+      headers: authHeaders(),
       body: formData,
     })
     return res.json()
   }
 
   async function fetchDocuments(baseId: string) {
-    const res = await fetch(`/api/v1/knowledge/bases/${baseId}/documents`)
+    const res = await fetch(`/api/v1/knowledge/bases/${baseId}/documents`, { headers: authHeaders() })
     const body = await res.json()
     documents.value = (body.data as Document[]) ?? []
   }
 
   async function deleteDocument(docId: string) {
-    await fetch(`/api/v1/knowledge/documents/${docId}`, { method: 'DELETE' })
+    await fetch(`/api/v1/knowledge/documents/${docId}`, { method: 'DELETE', headers: authHeaders() })
   }
 
   return { bases, documents, loading, fetchBases, createBase, deleteBase, uploadDocument, fetchDocuments, deleteDocument }

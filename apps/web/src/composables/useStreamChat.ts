@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { useAuthStore } from '@/stores/auth'
 
 export interface ChatMessage {
   id: string
@@ -52,9 +53,13 @@ export function useStreamChat() {
     abortController.value = controller
 
     try {
+      const authStore = useAuthStore()
       const response = await fetch('/api/v1/chat/stream', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...authStore.getAuthHeaders(),
+        },
         body: JSON.stringify({
           content,
           knowledgeBaseId: options?.knowledgeBaseId,

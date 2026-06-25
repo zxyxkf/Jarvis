@@ -1,8 +1,14 @@
-import { Controller, Post, Get, Body, Param, Req, Res, Logger } from '@nestjs/common'
+import { Controller, Post, Get, Body, Param, Req, Res, Logger, UseGuards } from '@nestjs/common'
+import { AuthGuard } from '@nestjs/passport'
 import type { Request, Response } from 'express'
 import { AgentService } from './agent.service'
 
+interface JwtRequest extends Request {
+  user: { id: string; email: string; role: string }
+}
+
 @Controller('agents')
+@UseGuards(AuthGuard('jwt'))
 export class AgentController {
   private readonly logger = new Logger(AgentController.name)
 
@@ -10,17 +16,15 @@ export class AgentController {
 
   @Post()
   create(
-    @Req() req: Request,
+    @Req() req: JwtRequest,
     @Body() body: { name: string; task: string; description?: string },
   ) {
-    const userId = (req.headers['x-user-id'] as string) || 'dev-user'
-    return this.agentService.create(userId, body.name, body.task, body.description)
+    return this.agentService.create(req.user.id, body.name, body.task, body.description)
   }
 
   @Get()
-  listTasks(@Req() req: Request) {
-    const userId = (req.headers['x-user-id'] as string) || 'dev-user'
-    return this.agentService.findUserTasks(userId)
+  listTasks(@Req() req: JwtRequest) {
+    return this.agentService.findUserTasks(req.user.id)
   }
 
   @Get(':id/status')

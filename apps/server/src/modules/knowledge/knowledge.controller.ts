@@ -1,30 +1,21 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Delete,
-  Body,
-  Param,
-  Query,
-  Req,
-  UploadedFile,
-  UseInterceptors,
+  Controller, Get, Post, Patch, Delete,
+  Body, Param, Query, Req, UploadedFile, UseInterceptors, UseGuards,
 } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
+import { AuthGuard } from '@nestjs/passport'
 import type { Request } from 'express'
 import { KnowledgeService } from './services/knowledge.service'
 import { DocumentService } from './services/document.service'
 import { SearchService } from './services/search.service'
 import { CreateKnowledgeBaseDto, UpdateKnowledgeBaseDto } from './dto/knowledge-base.dto'
 
-// Placeholder user extraction
-function getUserId(req: Request): string {
-  // TODO: Extract from JWT token in Phase 2
-  return (req.headers['x-user-id'] as string) || 'dev-user'
+interface JwtRequest extends Request {
+  user: { id: string; email: string; role: string }
 }
 
 @Controller('knowledge')
+@UseGuards(AuthGuard('jwt'))
 export class KnowledgeController {
   constructor(
     private readonly knowledgeService: KnowledgeService,
@@ -32,47 +23,39 @@ export class KnowledgeController {
     private readonly searchService: SearchService,
   ) {}
 
-  // === Knowledge Bases ===
-
   @Post('bases')
-  createBase(@Req() req: Request, @Body() dto: CreateKnowledgeBaseDto) {
-    return this.knowledgeService.create(getUserId(req), dto)
+  createBase(@Req() req: JwtRequest, @Body() dto: CreateKnowledgeBaseDto) {
+    return this.knowledgeService.create(req.user.id, dto)
   }
 
   @Get('bases')
-  findAllBases(@Req() req: Request) {
-    return this.knowledgeService.findAll(getUserId(req))
+  findAllBases(@Req() req: JwtRequest) {
+    return this.knowledgeService.findAll(req.user.id)
   }
 
   @Get('bases/:id')
-  findBase(@Req() req: Request, @Param('id') id: string) {
-    return this.knowledgeService.findById(getUserId(req), id)
+  findBase(@Req() req: JwtRequest, @Param('id') id: string) {
+    return this.knowledgeService.findById(req.user.id, id)
   }
 
   @Patch('bases/:id')
-  updateBase(
-    @Req() req: Request,
-    @Param('id') id: string,
-    @Body() dto: UpdateKnowledgeBaseDto,
-  ) {
-    return this.knowledgeService.update(getUserId(req), id, dto)
+  updateBase(@Req() req: JwtRequest, @Param('id') id: string, @Body() dto: UpdateKnowledgeBaseDto) {
+    return this.knowledgeService.update(req.user.id, id, dto)
   }
 
   @Delete('bases/:id')
-  deleteBase(@Req() req: Request, @Param('id') id: string) {
-    return this.knowledgeService.delete(getUserId(req), id)
+  deleteBase(@Req() req: JwtRequest, @Param('id') id: string) {
+    return this.knowledgeService.delete(req.user.id, id)
   }
-
-  // === Documents ===
 
   @Post('bases/:baseId/documents')
   @UseInterceptors(FileInterceptor('file'))
   uploadDocument(
-    @Req() req: Request,
+    @Req() req: JwtRequest,
     @Param('baseId') baseId: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.documentService.upload(getUserId(req), baseId, file)
+    return this.documentService.upload(req.user.id, baseId, file)
   }
 
   @Get('documents/:id/status')
@@ -81,16 +64,14 @@ export class KnowledgeController {
   }
 
   @Get('bases/:baseId/documents')
-  listDocuments(@Req() req: Request, @Param('baseId') baseId: string) {
-    return this.documentService.findByKnowledgeBase(getUserId(req), baseId)
+  listDocuments(@Req() req: JwtRequest, @Param('baseId') baseId: string) {
+    return this.documentService.findByKnowledgeBase(req.user.id, baseId)
   }
 
   @Delete('documents/:id')
-  deleteDocument(@Req() req: Request, @Param('id') id: string) {
-    return this.documentService.delete(getUserId(req), id)
+  deleteDocument(@Req() req: JwtRequest, @Param('id') id: string) {
+    return this.documentService.delete(req.user.id, id)
   }
-
-  // === Search ===
 
   @Post('bases/:baseId/search')
   search(

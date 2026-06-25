@@ -1,8 +1,14 @@
-import { Controller, Post, Body, Req, Res, Logger } from '@nestjs/common'
+import { Controller, Post, Body, Req, Res, Logger, UseGuards } from '@nestjs/common'
+import { AuthGuard } from '@nestjs/passport'
 import type { Request, Response } from 'express'
 import { ChatService } from './chat.service'
 
+interface JwtRequest extends Request {
+  user: { id: string; email: string; role: string }
+}
+
 @Controller('chat')
+@UseGuards(AuthGuard('jwt'))
 export class ChatController {
   private readonly logger = new Logger(ChatController.name)
 
@@ -10,13 +16,10 @@ export class ChatController {
 
   @Post('stream')
   async streamChat(
-    @Req() req: Request,
+    @Req() req: JwtRequest,
     @Body() body: { content: string; conversationId?: string; knowledgeBaseId?: string; model?: string },
     @Res() res: Response,
   ) {
-    const userId = (req.headers['x-user-id'] as string) || 'dev-user'
-
-    // SSE headers
     res.setHeader('Content-Type', 'text/event-stream')
     res.setHeader('Cache-Control', 'no-cache')
     res.setHeader('Connection', 'keep-alive')
@@ -24,7 +27,7 @@ export class ChatController {
     res.flushHeaders()
 
     try {
-      for await (const event of this.chatService.streamChat(userId, body.content, {
+      for await (const event of this.chatService.streamChat(req.user.id, body.content, {
         conversationId: body.conversationId,
         knowledgeBaseId: body.knowledgeBaseId,
         model: body.model,
