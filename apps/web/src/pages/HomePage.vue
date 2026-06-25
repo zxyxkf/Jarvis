@@ -1,13 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { useStreamChat } from '@/composables/useStreamChat'
 import { useThemeStore, type ThemePreset } from '@/stores/theme'
 import ChatBubble from '@/components/chat/ChatBubble.vue'
 import ChatInput from '@/components/chat/ChatInput.vue'
 import ChatSources from '@/components/chat/ChatSources.vue'
 
-const router = useRouter()
 const theme = useThemeStore()
 const { messages, isStreaming, sendMessage, abort } = useStreamChat()
 const selectedKB = ref<string | undefined>()

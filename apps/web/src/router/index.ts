@@ -13,5 +13,10 @@ export const router = createRouter({
       name: 'knowledge',
       component: () => import('@/pages/KBPage.vue'),
     },
+    {
+      path: '/agents',
+      name: 'agents',
+      component: () => import('@/pages/AgentPage.vue'),
+    },
   ],
 })
