@@ -13,6 +13,12 @@
 ## 目录
 
 0. [架构哲学：可迭代性优先](#0-架构哲学可迭代性优先)
+   - [六条铁律](#02-六条铁律)
+   - [模块通信规范](#03-模块间通信规范)
+   - [新增功能标准流程](#04-新增功能的标准流程-保证不破窗)
+   - [反模式清单](#05-反模式清单-每次提交前自查)
+   - [重构成本账](#06-重构成本账-为什么要守铁律)
+   - [角色协作体系](#07-角色协作体系)
 1. [项目定位与愿景](#1-项目定位与愿景)
 2. [产品功能规划](#2-产品功能规划)
 3. [技术架构总览](#3-技术架构总览)
@@ -300,6 +306,126 @@ async function searchDocuments(query: SearchQuery) {
 每次偷懒跳过边界隔离   (-5 分钟)         → 第 12 周加功能: 8 小时 + 引入 3 个新 Bug
 
 12 周累计: 正确的慢 = 多花 ~2 小时 | 偷懒的快 = 多花 ~40 小时
+```
+
+### 0.7 角色协作体系
+
+> **核心原则**: 不是"多个独立 Agent 并行干活"，而是 **"一个主驱动力 + 按阶段切换角色人格 + 关键节点派子 Agent 独立验证"**。上下文完整是第一优先级。
+
+#### 0.7.1 角色全景图
+
+```
+                        🔷 项目经理
+                      任务拆解 · 范围控制 · 里程碑验收
+                            │
+                    ┌───────┼───────┐
+                    │               │
+               🔷 架构师         🔷 测试者
+          接口边界 · 数据流    边界条件 · 三层断言
+          ADR · 依赖图        E2E 验证 · 评估集回归
+                    │               │
+            ┌───────┴───────────────┤
+            │      🔷 开发者        │
+            │  ┌──────────────────┐ │
+            │  │ 🟦 后端开发者    │ │
+            │  │ 🟩 前端开发者    │ │
+            │  │ 🟨 AI 工程师     │ │
+            │  │ 🟪 数据库工程师  │ │
+            │  │ 🟫 基建/DevOps  │ │
+            │  └──────────────────┘ │
+            └──────────┬────────────┘
+                       │
+                  🔷 审查者
+            code-reviewer · security-reviewer
+            silent-failure-hunter · type-design-analyzer
+```
+
+#### 0.7.2 每个角色的关注点与检查清单
+
+| 角色 | 激活时机 | 核心关注点 | 提交前检查 |
+|------|---------|-----------|----------|
+| 🔷 **项目经理** | 每个 Phase 开始/结束 | 范围不膨胀、里程碑不延期、依赖不阻塞、Done Criteria 逐项验收 | Phase 验收清单全部勾选 |
+| 🔷 **架构师** | 新技术决策前、跨模块设计 | 接口边界（只依赖抽象）、数据流向（单向/不可变）、模块耦合度、ADR 记录 | 接口定义清晰、数据流图可解释、依赖无循环 |
+| 🟦 **后端开发者** | NestJS 模块开发 | DI 依赖注入、参数校验(Zod)、异常拦截、接口 `/api/v1/` 前缀、响应体格式统一 | Controller 有 try-catch、DTO Zod schema 与 Prisma 类型一致、Guard 生效 |
+| 🟩 **前端开发者** | Vue 组件/Composable/Pinia | Props/Emits 类型显式定义、SSE 流式断开恢复、虚拟列表空状态/加载态/错误态、响应式断点覆盖 | PWA 缓存策略正确、暗色/浅色双主题可用、组件无未定义 Props |
+| 🟨 **AI 工程师** | LangChain 管线/Prompt/模型网关 | RAG 召回质量（Recall/Precision）、Token 效率、模型路由与降级、内容安全审核、三层断言测试 | 对抗性测试 ≥30 条通过、Token 消耗记录、Prompt 模板非硬编码 |
+| 🟪 **数据库工程师** | Prisma Schema/Migration/Query | 索引策略（查询走 EXPLAIN）、Migration 可回滚、Schema 变更向前兼容、备份已执行 | Migration SQL 审查通过、pgvector 索引正确、query 无 N+1 |
+| 🟫 **基建/DevOps** | Docker/CI/监控/部署 | 容器 healthcheck 就绪、资源限制生效、启动顺序正确（service_healthy）、告警规则配置、日志结构化(Pino) | Docker Compose 一键启动成功、CI 管线绿色、Prometheus 指标可采集 |
+| 🔷 **测试者** | 每个功能完成后 | 边界条件（空值/超长/并发）、异常路径（网络断开/API 超时/模型报错）、AI 输出用三层断言、E2E 关键路径 | 单元测试 ≥80%、E2E 骨架通过、评估集基线记录 |
+| 🔷 **审查者** | 提交前 | 代码坏味道（God Service/深层嵌套/硬编码）、安全漏洞（OWASP Top-10）、沉默失败（被吞异常）、类型设计（易被误用的接口） | 派 code-reviewer + security-reviewer + silent-failure-hunter 子 Agent 独立审查 |
+
+#### 0.7.3 角色切换规则
+
+```
+1. 角色切换由开发阶段自动决定，不需要手动指令
+
+   Phase 开始  → 🔷 项目经理 (任务拆解)
+   接口/数据流  → 🔷 架构师 (定义契约)
+   写后端代码   → 🟦 后端开发者
+   写前端代码   → 🟩 前端开发者
+   写 AI 管线   → 🟨 AI 工程师
+   改数据库     → 🟪 数据库工程师
+   配 Docker/CI → 🟫 基建工程师
+   功能完成     → 🔷 测试者 (验证)
+   提交前       → 🔷 审查者 (派子 Agent 独立审查)
+   Phase 结束   → 🔷 项目经理 (验收)
+
+2. 需要"全貌理解"的角色 → 我自己切换（上下文完整）
+   需要"独立视角"的角色 → 派子 Agent（防盲区）
+
+   我自己切换:                   派子 Agent:
+   🔷 项目经理  🔷 架构师        code-reviewer
+   🟦🟩🟨🟪🟫 全部开发者子角色    security-reviewer
+   🔷 测试者（单元/集成）         silent-failure-hunter
+                                 e2e-runner (Playwright 独立验证)
+                                 type-design-analyzer
+```
+
+#### 0.7.4 典型开发节奏 (以 Phase 1 为例)
+
+```
+Day 1 上午  🟫 基建
+  Docker Compose 调通 PG/Redis/MinIO + healthcheck
+  CI 管线跑通 lint + typecheck
+
+Day 1 下午  🟪 数据库
+  Prisma Schema: KnowledgeBase / Document / Chunk 模型
+  Migration 创建 + pgvector 扩展启用
+
+Day 1 傍晚  🔷 架构师 + 🔷 项目经理
+  定义知识库模块接口: IChunkingService / IEmbeddingService / ISearchService
+  拆解 Day 2-7 任务清单 + 依赖关系
+
+Day 2-5    🟦 后端开发者
+  KnowledgeModule CRUD + 文档上传 API
+  DocumentParser + ChunkingService + EmbeddingService
+  SearchService: pgvector 检索 + BM25
+  ChatModule: SSE 流式对话
+
+Day 5-7    🟨 AI 工程师
+  LangChain RAG 管线: 查询改写 → 混合检索 → Rerank
+  多模型网关 fallback 链 + 熔断器
+  Prompt 模板管理
+
+Day 7-10   🟩 前端开发者
+  Chat 界面 (AI Elements Vue): Conversation + Message + PromptInput
+  知识库管理: 上传/列表/状态
+  来源引用: SourcePanel
+
+Day 10-11  🔷 测试者
+  全链路验证: 上传 PDF → 解析 → 提问 → 检查回答含引用
+  AI 输出三层断言: 结构/语义/属性
+  跑 80 条 RAG 评估集, 记录基线
+
+Day 11-12  🔷 审查者
+  派 code-reviewer 独立审查全量代码
+  派 security-reviewer 扫 auth/API 安全
+  派 silent-failure-hunter 扫异常处理
+
+Day 12     🔷 项目经理
+  对照 Phase 1 Done Criteria 逐项验收
+  标记 @abstract-candidate 潜在复用点
+  提交 + 推送
 ```
 
 ---
