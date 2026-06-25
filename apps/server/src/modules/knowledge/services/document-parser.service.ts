@@ -14,9 +14,9 @@ export class DocumentParserService {
       case 'text/plain':
       case 'text/markdown':
       case 'text/csv':
-        return { text: buffer.toString('utf-8') }
+        return { text: this.cleanText(buffer.toString('utf-8')) }
       default:
-        return { text: buffer.toString('utf-8') }
+        return { text: this.cleanText(buffer.toString('utf-8')) }
     }
   }
 
