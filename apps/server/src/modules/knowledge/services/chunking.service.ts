@@ -40,11 +40,14 @@ export class ChunkingService {
     for (const split of splits) {
       const candidate = currentChunk ? `${currentChunk}${sep}${split}` : split
 
-      if (candidate.length > chunkSize && currentChunk.length > 0) {
+      // Force push when current chunk reached chunkSize
+      if (currentChunk.length >= chunkSize) {
+        chunks.push({ content: currentChunk.trim(), index: index++, metadata: {} })
+        currentChunk = split
+      } else if (candidate.length > chunkSize && currentChunk.length > 0) {
         chunks.push({ content: currentChunk.trim(), index: index++, metadata: {} })
         currentChunk = split
       } else if (candidate.length > chunkSize) {
-        // Single split is too large, recurse with next separator
         const subChunks = this.recursiveSplit(split, rest, chunkSize, overlapRatio)
         chunks.push(...subChunks.map((c) => ({ ...c, index: index++ })))
       } else {

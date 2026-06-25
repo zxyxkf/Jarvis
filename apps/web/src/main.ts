@@ -3,9 +3,8 @@ import { createPinia } from 'pinia'
 import { router } from './router'
 import { registerServiceWorker } from './utils/register-sw'
 import App from './App.vue'
-import './styles/global.css'
+import './styles/tailwind.css'
 
-// Register PWA service worker
 registerServiceWorker()
 
 const app = createApp(App)
