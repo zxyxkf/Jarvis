@@ -7,6 +7,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ============================================================
+// User & Auth
+// ============================================================
+
 model User {
   id            String    @id @default(uuid())
   email         String    @unique
@@ -17,8 +21,79 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  conversations Conversation[]
+  conversations  Conversation[]
+  knowledgeBases KnowledgeBase[]
+  documents      Document[]
+  agentTasks     AgentTask[]
+  apiKeys        ApiKey[]
+  auditLogs      AuditLog[]
 }
+
+model ApiKey {
+  id        String   @id @default(uuid())
+  provider  String   // deepseek, qwen, openai
+  keyHash   String   // AES-256-GCM encrypted
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+// ============================================================
+// Knowledge Base
+// ============================================================
+
+model KnowledgeBase {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  ownerId     String
+  owner       User     @relation(fields: [ownerId], references: [id])
+  documents   Document[]
+  chunks      Chunk[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Document {
+  id              String        @id @default(uuid())
+  fileName        String
+  fileType        String        // pdf, docx, md, txt, xlsx
+  fileSize        Int           // bytes
+  fileUrl         String        // MinIO storage path
+  status          DocStatus     @default(PENDING)
+  errorMessage    String?
+  knowledgeBaseId String
+  knowledgeBase   KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id])
+  uploaderId      String
+  uploader        User          @relation(fields: [uploaderId], references: [id])
+  chunks          Chunk[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([knowledgeBaseId])
+  @@index([status])
+}
+
+model Chunk {
+  id              String        @id @default(uuid())
+  content         String
+  embedding       Unsupported("vector(1024)")?
+  embeddingModel  String?       // track which model version produced this
+  chunkIndex      Int
+  metadata        Json?         // { pageNumber, sectionTitle, parentChunkId }
+  documentId      String
+  document        Document      @relation(fields: [documentId], references: [id])
+  knowledgeBaseId String
+  knowledgeBase   KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id])
+  createdAt       DateTime      @default(now())
+
+  @@index([knowledgeBaseId])
+  @@index([documentId])
+}
+
+// ============================================================
+// Chat & Agent
+// ============================================================
 
 model Conversation {
   id        String    @id @default(uuid())
@@ -28,6 +103,8 @@ model Conversation {
   messages  Message[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+
+  @@index([userId])
 }
 
 model Message {
@@ -36,11 +113,53 @@ model Message {
   content        String
   tokenCount     Int?
   modelName      String?
-  citations      Json?
+  citations      Json?        // [{ chunkId, documentName, content, score }]
   conversationId String
   conversation   Conversation @relation(fields: [conversationId], references: [id])
   createdAt      DateTime     @default(now())
+
+  @@index([conversationId])
 }
+
+model AgentTask {
+  id          String      @id @default(uuid())
+  name        String
+  description String?
+  status      AgentStatus @default(PENDING)
+  workflow    Json        // LangGraph workflow definition
+  state       Json?       // execution state (checkpoint support)
+  result      Json?       // execution result
+  creatorId   String
+  creator     User        @relation(fields: [creatorId], references: [id])
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([creatorId])
+  @@index([status])
+}
+
+// ============================================================
+// Audit
+// ============================================================
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String   // login, upload_document, chat, agent_execute
+  resource  String?  // target resource id
+  detail    Json?    // { tokenCount, modelName, ... }
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+// ============================================================
+// Enums
+// ============================================================
 
 enum Role {
   USER
@@ -48,9 +167,24 @@ enum Role {
   SUPER_ADMIN
 }
 
+enum DocStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
 enum MessageRole {
   user
   assistant
   system
   tool
+}
+
+enum AgentStatus {
+  PENDING
+  RUNNING
+  WAITING_HUMAN
+  COMPLETED
+  FAILED
 }
