@@ -11,29 +11,5 @@ import { AuthModule } from './modules/auth/auth.module'
 import { ContentModule } from './modules/content/content.module'
 import { ResponseInterceptor } from './common/interceptors/response.interceptor'
 import { HttpExceptionFilter } from './common/filters/http-exception.filter'
-import { StorageService } from './infrastructure/storage/storage.service'
-
-@Module({
-  imports: [
-    InfrastructureModule,
-    HealthModule,
-    KnowledgeModule,
-    ChatModule,
-    AgentModule,
-    ScheduleModule,
-    MetricsModule,
-    AuthModule,
-    ContentModule,
-  ],
-  providers: [
-    { provide: APP_INTERCEPTOR, useClass: ResponseInterceptor },
-    { provide: APP_FILTER, useClass: HttpExceptionFilter },
-  ],
-})
-export class AppModule {
-  constructor(private readonly storage: StorageService) {
-    this.storage.ensureBucket().catch((err) => {
-      console.warn('MinIO bucket init failed (MinIO may not be running):', err.message)
-    })
-  }
-}
+@Module({imports:[InfrastructureModule,HealthModule,KnowledgeModule,ChatModule,AgentModule,ScheduleModule,MetricsModule,AuthModule,ContentModule],providers:[{provide:APP_INTERCEPTOR,useClass:ResponseInterceptor},{provide:APP_FILTER,useClass:HttpExceptionFilter}]})
+export class AppModule {}

@@ -1,35 +1,30 @@
-import { Controller, Post, Body, Get, UseGuards, Req } from '@nestjs/common'
+import { Controller, Post, Body, Get, UseGuards, Req, BadRequestException, Inject } from '@nestjs/common'
 import { AuthGuard } from '@nestjs/passport'
 import type { Request } from 'express'
 import { AuthService } from './auth.service'
-import { RegisterDto, LoginDto, RefreshDto } from './dto/auth.dto'
 
-interface JwtRequest extends Request {
-  user: { id: string; email: string; role: string }
-}
+interface JwtRequest extends Request { user: { id: string; email: string; role: string } }
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(@Inject(AuthService) private readonly authService: AuthService) {}
 
   @Post('register')
-  register(@Body() dto: RegisterDto) {
-    return this.authService.register(dto.email, dto.password, dto.name)
+  register(@Body() body: { email: string; password: string; name: string }) {
+    if (!body.email || !body.password || !body.name) throw new BadRequestException('Missing fields')
+    return this.authService.register(body.email, body.password, body.name)
   }
-
   @Post('login')
-  login(@Body() dto: LoginDto) {
-    return this.authService.login(dto.email, dto.password)
+  login(@Body() body: { email: string; password: string }) {
+    if (!body.email || !body.password) throw new BadRequestException('Missing fields')
+    return this.authService.login(body.email, body.password)
   }
-
   @Post('refresh')
-  refresh(@Body() dto: RefreshDto) {
-    return this.authService.refreshToken(dto.refreshToken)
+  refresh(@Body() body: { refreshToken: string }) {
+    if (!body.refreshToken) throw new BadRequestException('Missing refreshToken')
+    return this.authService.refreshToken(body.refreshToken)
   }
-
   @Get('profile')
   @UseGuards(AuthGuard('jwt'))
-  getProfile(@Req() req: JwtRequest) {
-    return this.authService.getProfile(req.user.id)
-  }
+  getProfile(@Req() req: JwtRequest) { return this.authService.getProfile(req.user.id) }
 }
