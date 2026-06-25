@@ -97,3 +97,6 @@ docker-data/
 # PWA (generated at build time)
 **/sw.js
 **/workbox-*.js
+
+# Project documentation (local only)
+项目流程/
