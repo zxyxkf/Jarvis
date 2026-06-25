@@ -3,12 +3,7 @@ export function registerServiceWorker(): void {
     window.addEventListener('load', () => {
       navigator.serviceWorker
         .register('/sw.js')
-        .then((registration) => {
-          console.info('SW registered:', registration.scope)
-        })
-        .catch((err) => {
-          console.warn('SW registration failed:', err)
-        })
+        .catch(() => { /* non-critical */ })
     })
   }
 }

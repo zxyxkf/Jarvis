@@ -8,6 +8,7 @@ import { AgentModule } from './modules/agent/agent.module'
 import { ScheduleModule } from './modules/schedule/schedule.module'
 import { MetricsModule } from './common/metrics/metrics.module'
 import { AuthModule } from './modules/auth/auth.module'
+import { ContentModule } from './modules/content/content.module'
 import { ResponseInterceptor } from './common/interceptors/response.interceptor'
 import { HttpExceptionFilter } from './common/filters/http-exception.filter'
 import { StorageService } from './infrastructure/storage/storage.service'
@@ -22,6 +23,7 @@ import { StorageService } from './infrastructure/storage/storage.service'
     ScheduleModule,
     MetricsModule,
     AuthModule,
+    ContentModule,
   ],
   providers: [
     { provide: APP_INTERCEPTOR, useClass: ResponseInterceptor },

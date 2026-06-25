@@ -1,11 +1,11 @@
 {
   "name": "@jarvis/desktop",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc -b && vite build",
+    "build": "vite build",
     "tauri": "tauri",
     "lint": "eslint src/ --ext .vue,.ts",
     "typecheck": "vue-tsc --noEmit"
@@ -18,6 +18,7 @@
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.0.0",
+    "@tauri-apps/api": "^2.0.0",
     "@tauri-apps/plugin-notification": "^2.0.0",
     "@tauri-apps/plugin-global-shortcut": "^2.0.0",
     "@vitejs/plugin-vue": "^5.1.0",
