@@ -8,7 +8,6 @@ export const router = createRouter({
     { path: '/', name: 'home', component: () => import('@/pages/HomePage.vue') },
     { path: '/knowledge', name: 'knowledge', component: () => import('@/pages/KBPage.vue') },
     { path: '/agents', name: 'agents', component: () => import('@/pages/AgentPage.vue') },
-    { path: '/settings', name: 'settings', component: () => import('@/pages/SettingsPage.vue') },
   ],
 })
 
