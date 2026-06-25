@@ -103,7 +103,6 @@ function handleSend(text: string) {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
           </button>
         </div>
-        <p class="input-hint">Enter 发送 · Shift+Enter 换行</p>
       </div>
     </main>
   </div>
@@ -141,17 +140,17 @@ function handleSend(text: string) {
 .citations { margin-top:8px; padding-top:8px; border-top:1px solid var(--color-border-light); display:flex; flex-wrap:wrap; gap:6px; align-items:center }
 .citations-label { font-size:11px; color:var(--color-text-muted) }
 .cite-badge { font-size:11px; padding:2px 8px; background:var(--color-bg-hover); border-radius:6px; color:var(--color-text-secondary); cursor:help }
-.input-bar { padding:0 32px 20px; display:flex; flex-direction:column; align-items:center }
-.input-wrapper { width:100%; max-width:760px; display:flex; gap:0; background:var(--color-bg-tertiary); border:1px solid var(--color-border); border-radius:16px; padding:6px 6px 6px 16px; transition:border-color .2s; box-shadow:0 2px 8px rgba(0,0,0,.15) }
+.input-bar { padding:16px 32px 24px; border-top:1px solid var(--color-border-light); background:var(--color-bg-primary) }
+.input-wrapper { width:100%; display:flex; gap:0; background:var(--color-bg-tertiary); border:1px solid var(--color-border); border-radius:16px; padding:8px 8px 8px 20px; transition:border-color .2s }
 .input-wrapper:focus-within { border-color:var(--color-accent); box-shadow:0 2px 16px rgba(16,163,127,.1) }
-.chat-input { flex:1; background:transparent; border:none; padding:8px 0; font-size:14px; color:var(--color-text-primary); outline:none; resize:none; max-height:150px; line-height:1.5; font-family:inherit }
-.chat-input::placeholder { color:var(--color-text-muted); opacity:.7 }
+.chat-input { flex:1; background:transparent; border:none; padding:10px 0; font-size:15px; color:var(--color-text-primary); outline:none; resize:none; max-height:180px; line-height:1.55; font-family:inherit }
+.chat-input::placeholder { color:var(--color-text-muted); opacity:.6 }
 .chat-input:disabled { opacity:.5 }
-.send-btn { width:38px; height:38px; flex-shrink:0; background:var(--color-accent); border:none; border-radius:10px; color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; margin-left:8px }
+.send-btn { width:42px; height:42px; flex-shrink:0; background:var(--color-accent); border:none; border-radius:10px; color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; margin-left:10px }
 .send-btn:hover:not(:disabled) { background:var(--color-accent-hover); transform:scale(1.05) }
 .send-btn:disabled { opacity:.3; cursor:not-allowed; transform:none }
 .stop-btn { width:38px; height:38px; flex-shrink:0; background:#ef4444; border:none; border-radius:10px; color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; margin-left:8px }
 .stop-btn:hover { background:#dc2626 }
-.input-hint { font-size:11px; color:var(--color-text-muted); opacity:.5; margin-top:8px; text-align:center }
+.input-hint { font-size:11px; color:var(--color-text-muted); opacity:.5; margin-top:8px; text-align:center; display:none }
 @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
 </style>
