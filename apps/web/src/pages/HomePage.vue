@@ -55,7 +55,7 @@ function handleStop() {
       <div v-else class="flex-1 overflow-y-auto px-8 py-6 space-y-4">
         <div v-for="msg in messages" :key="msg.id" class="space-y-3">
           <ChatBubble
-            :role="msg.role as 'user' | 'assistant'"
+            :role="msg.role"
             :content="msg.content"
             :is-loading="isStreaming && msg.role === 'assistant' && !msg.content && msg === messages[messages.length - 1]"
           />

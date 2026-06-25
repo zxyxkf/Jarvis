@@ -32,6 +32,9 @@ module.exports = {
       extends: ['plugin:vue/vue3-recommended'],
       rules: {
         'vue/multi-word-component-names': 'off',
+        // Stylistic rules handled by Prettier — ESLint stays focused on logic
+        'vue/singleline-html-element-content-newline': 'off',
+        'vue/max-attributes-per-line': 'off',
       },
     },
   ],

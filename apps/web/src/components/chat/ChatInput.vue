@@ -55,16 +55,20 @@ watch(text, () => nextTick(() => autoResize()))
     />
     <button
       v-if="!disabled"
+      aria-label="发送"
       class="shrink-0 w-10 h-10 rounded-xl bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-semibold text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
       :disabled="!text.trim()"
       @click="handleSend"
-      aria-label="发送"
-    >→</button>
+    >
+      →
+    </button>
     <button
       v-else
+      aria-label="停止生成"
       class="shrink-0 w-10 h-10 rounded-xl bg-red-500 hover:bg-red-600 text-white text-xs font-semibold transition-colors"
       @click="handleStop"
-      aria-label="停止生成"
-    >■</button>
+    >
+      ■
+    </button>
   </div>
 </template>

@@ -46,6 +46,7 @@ export class DocumentParserService {
     return text
       .replace(/\r\n/g, '\n')
       .replace(/\n{4,}/g, '\n\n\n')
+      // eslint-disable-next-line no-control-regex
       .replace(/\x00/g, '')
       .trim()
   }

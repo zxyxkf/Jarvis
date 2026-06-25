@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common'
-import type { IModelProvider, ChatMessage, ChatOptions, ChatResponse } from '../interfaces'
+import type { ChatMessage, ChatOptions } from '../interfaces'
 
 interface ProviderConfig {
   name: string
