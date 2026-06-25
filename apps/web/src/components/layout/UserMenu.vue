@@ -3,8 +3,18 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useThemeStore, type ThemePreset } from '@/stores/theme'
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSubTrigger, DropdownMenuSubContent } from '@/components/ui/dropdown-menu'
-import { DropdownMenuPortal, DropdownMenuSub } from 'reka-ui'
+import {
+  DropdownMenuRoot,
+  DropdownMenuTrigger,
+  DropdownMenuPortal,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuItem,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuSeparator,
+} from 'reka-ui'
 import AboutModal from './AboutModal.vue'
 
 const auth = useAuthStore()
@@ -20,59 +30,111 @@ function initials(name: string): string { return name.slice(0, 2).toUpperCase() 
 </script>
 
 <template>
-  <DropdownMenu>
-    <DropdownMenuTrigger class="avatar-btn" as="button">
+  <DropdownMenuRoot>
+    <DropdownMenuTrigger as="button" class="avatar-btn">
       <div class="avatar">{{ auth.user ? initials(auth.user.name) : '?' }}</div>
       <div class="avatar-name">{{ auth.user?.name || '未登录' }}</div>
     </DropdownMenuTrigger>
 
     <DropdownMenuPortal>
-      <DropdownMenuContent side="top" align="start" :side-offset="10" class="min-w-[220px]">
-        <div class="dm-user">
-          <div class="dm-avatar">{{ auth.user ? initials(auth.user.name) : '?' }}</div>
+      <DropdownMenuContent side="top" align="start" :side-offset="10" class="menu-box">
+        <div class="menu-user">
+          <div class="menu-avatar">{{ auth.user ? initials(auth.user.name) : '?' }}</div>
           <div>
-            <div class="dm-name">{{ auth.user?.name }}</div>
-            <div class="dm-email">{{ auth.user?.email }}</div>
+            <div class="menu-name">{{ auth.user?.name }}</div>
+            <div class="menu-email">{{ auth.user?.email }}</div>
           </div>
         </div>
 
-        <DropdownMenuSeparator />
+        <DropdownMenuSeparator class="menu-sep" />
 
         <DropdownMenuSub>
-          <DropdownMenuSubTrigger>主题</DropdownMenuSubTrigger>
+          <DropdownMenuSubTrigger class="menu-item">
+            主题
+            <span class="menu-arrow">▸</span>
+          </DropdownMenuSubTrigger>
           <DropdownMenuPortal>
-            <DropdownMenuSubContent side="right" align="start" :side-offset="6" :align-offset="-5" class="w-28">
-              <DropdownMenuItem :class="theme.active === 'chatgpt-dark' ? 'active' : ''" @select="handleSwitchTheme('chatgpt-dark')">暗色</DropdownMenuItem>
-              <DropdownMenuItem :class="theme.active === 'notion-light' ? 'active' : ''" @select="handleSwitchTheme('notion-light')">极简白</DropdownMenuItem>
+            <DropdownMenuSubContent side="right" align="start" :side-offset="6" class="menu-box" style="min-width:100px">
+              <DropdownMenuItem
+                class="menu-item"
+                :class="{ 'menu-active': theme.active === 'chatgpt-dark' }"
+                @select="handleSwitchTheme('chatgpt-dark')"
+              >暗色</DropdownMenuItem>
+              <DropdownMenuItem
+                class="menu-item"
+                :class="{ 'menu-active': theme.active === 'notion-light' }"
+                @select="handleSwitchTheme('notion-light')"
+              >极简白</DropdownMenuItem>
             </DropdownMenuSubContent>
           </DropdownMenuPortal>
         </DropdownMenuSub>
 
-        <DropdownMenuSeparator />
+        <DropdownMenuSeparator class="menu-sep" />
 
-        <DropdownMenuItem @select="handleSwitchAccount">切换账号</DropdownMenuItem>
-        <DropdownMenuItem @select="handleAbout">关于 Jarvis</DropdownMenuItem>
-        <DropdownMenuItem class="danger" @select="handleLogout">退出登录</DropdownMenuItem>
+        <DropdownMenuItem class="menu-item" @select="handleSwitchAccount">切换账号</DropdownMenuItem>
+        <DropdownMenuItem class="menu-item" @select="handleAbout">关于 Jarvis</DropdownMenuItem>
+        <DropdownMenuItem class="menu-item menu-danger" @select="handleLogout">退出登录</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenuPortal>
-  </DropdownMenu>
+  </DropdownMenuRoot>
 
   <AboutModal v-if="showAbout" @close="showAbout = false" />
 </template>
+
+<style>
+/* ── Dropdown style ── */
+.menu-box {
+  min-width: 210px;
+  background: var(--color-bg-secondary) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 14px !important;
+  padding: 6px !important;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.4) !important;
+}
+
+/* ── User info ── */
+.menu-user { display: flex; align-items: center; gap: 10px; padding: 6px 8px 10px }
+.menu-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--color-accent-muted); color: var(--color-accent); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0 }
+.menu-name { font-size: 13px; font-weight: 600; color: var(--color-text-primary); margin-bottom: 1px }
+.menu-email { font-size: 11px; color: var(--color-text-muted) }
+
+/* ── Items ── */
+.menu-item {
+  border-radius: 8px !important;
+  font-size: 13px !important;
+  color: var(--color-text-secondary) !important;
+  padding: 8px 10px !important;
+  cursor: pointer !important;
+  outline: none !important;
+  display: flex !important;
+  align-items: center !important;
+  transition: background 0.15s !important;
+}
+.menu-item[data-highlighted] {
+  background: var(--color-bg-hover) !important;
+  color: var(--color-text-primary) !important;
+}
+.menu-item.menu-active {
+  background: var(--color-accent-muted) !important;
+  color: var(--color-accent) !important;
+}
+.menu-item.menu-danger {
+  color: #ef4444 !important;
+}
+.menu-item.menu-danger[data-highlighted] {
+  background: rgba(239,68,68,0.08) !important;
+}
+.menu-arrow { margin-left: auto; font-size: 11px; opacity: 0.5 }
+.menu-sep {
+  height: 1px !important;
+  background: var(--color-border-light) !important;
+  margin: 4px 0 !important;
+}
+</style>
 
 <style scoped>
 .avatar-btn{display:flex;align-items:center;gap:10px;width:100%;padding:8px;border-radius:10px;background:none;border:none;cursor:pointer;color:var(--color-text-primary);font-family:inherit;transition:background .15s}
 .avatar-btn:hover{background:var(--color-bg-hover)}
 .avatar{width:34px;height:34px;border-radius:50%;background:var(--color-accent-muted);color:var(--color-accent);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
 .avatar-name{font-size:13px;color:var(--color-text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-
-.dm-user{display:flex;align-items:center;gap:10px;padding:4px 0}
-.dm-avatar{width:32px;height:32px;border-radius:50%;background:var(--color-accent-muted);color:var(--color-accent);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
-.dm-name{font-size:13px;font-weight:600;color:var(--color-text-primary);margin-bottom:1px}
-.dm-email{font-size:11px;color:var(--color-text-muted)}
-
-.active{background:var(--color-accent-muted);color:var(--color-accent)}
-.active[data-highlighted]{color:var(--color-accent)}
-.danger,.danger[data-highlighted]{color:#ef4444}
-.danger[data-highlighted]{background:rgba(239,68,68,.08)}
 </style>
