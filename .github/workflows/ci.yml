@@ -8,17 +8,17 @@ on:
 
 env:
   NODE_OPTIONS: '--max-old-space-size=4096'
+  COREPACK_ENABLE_STRICT: '0'
 
 jobs:
   lint:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: pnpm
+      - run: corepack enable
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
 
@@ -26,11 +26,10 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: pnpm
+      - run: corepack enable
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @jarvis/server db:generate
       - run: pnpm typecheck
@@ -57,11 +56,10 @@ jobs:
       REDIS_URL: redis://localhost:6379
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: pnpm
+      - run: corepack enable
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @jarvis/server db:generate
       - run: pnpm test
@@ -71,11 +69,18 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: pnpm
+      - run: corepack enable
       - run: pnpm install --frozen-lockfile
       - run: npx playwright install chromium --with-deps
-      - run: pnpm --filter @jarvis/web test:e2e
+      - run: npx vite --port 5173 &
+        working-directory: apps/web
+      - run: |
+          for i in $(seq 1 30); do
+            curl -s http://localhost:5173 > /dev/null && break
+            sleep 1
+          done
+      - run: npx playwright test
+        working-directory: apps/web

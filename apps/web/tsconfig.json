@@ -1,13 +1,10 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src",
     "paths": {
       "@/*": ["./src/*"],
       "@jarvis/shared": ["../../packages/shared/src"]
     }
   },
-  "include": ["src", "env.d.ts"],
-  "exclude": ["node_modules", "dist", "e2e"]
+  "include": ["src", "env.d.ts"]
 }

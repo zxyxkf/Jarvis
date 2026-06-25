@@ -9,7 +9,7 @@ export default defineConfig({
   reporter: 'html',
   timeout: 30000,
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: process.env.CI ? 'http://localhost:5173' : 'http://localhost:5173',
     trace: 'on-first-retry',
   },
   projects: [
@@ -18,10 +18,5 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  webServer: {
-    command: 'pnpm dev',
-    url: 'http://localhost:5173',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120000,
-  },
+  // webServer handled by CI job explicitly — turborepo dev is incompatible with playwright webServer
 })
