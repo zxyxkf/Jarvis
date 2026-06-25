@@ -9,7 +9,6 @@ import UserMenu from './UserMenu.vue'
         <div class="brand-icon">J</div>
         <div class="brand-text">
           <span class="brand-name">Jarvis</span>
-          <span class="brand-ver">v0.3</span>
         </div>
       </div>
     </div>
@@ -45,9 +44,8 @@ import UserMenu from './UserMenu.vue'
 .sidebar-header{padding:16px;border-bottom:1px solid var(--color-border-light);flex-shrink:0}
 .sidebar-brand{display:flex;align-items:center;gap:10px}
 .brand-icon{width:32px;height:32px;border-radius:8px;background:var(--color-accent-muted);color:var(--color-accent);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;flex-shrink:0}
-.brand-text{display:flex;flex-direction:column;gap:1px;min-width:0}
+.brand-text{min-width:0}
 .brand-name{font-size:15px;font-weight:700;color:var(--color-text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.brand-ver{font-size:11px;color:var(--color-text-muted)}
 .sidebar-content{flex:1;overflow-y:auto;padding:12px;min-width:0}
 .sidebar-group{margin-bottom:8px}
 .sidebar-group-label{font-size:11px;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.05em;padding:0 10px;margin-bottom:6px;white-space:nowrap}
