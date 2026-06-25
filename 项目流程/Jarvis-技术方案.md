@@ -19,6 +19,7 @@
    - [反模式清单](#05-反模式清单-每次提交前自查)
    - [重构成本账](#06-重构成本账-为什么要守铁律)
    - [角色协作体系](#07-角色协作体系)
+   - [边界执法 · 每次提交前强制执行](#08-边界执法--每次提交前强制执行)
 1. [项目定位与愿景](#1-项目定位与愿景)
 2. [产品功能规划](#2-产品功能规划)
 3. [技术架构总览](#3-技术架构总览)
@@ -426,6 +427,150 @@ Day 12     🔷 项目经理
   对照 Phase 1 Done Criteria 逐项验收
   标记 @abstract-candidate 潜在复用点
   提交 + 推送
+```
+
+### 0.8 边界执法 · 每次提交前强制执行
+
+> **这条高于一切。铁律不是"建议"，是"不遵守就不许提交"。**
+
+#### 0.8.1 边界检查卡（每次提交前逐项通过）
+
+```
+┌─────────────────────────────────────────────────────────┐
+│              🔒 提交边界检查卡 (不可跳过)                  │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│ □ 铁律1 边界隔离                                         │
+│   本次改动是否有一个模块 import 了另一个模块的内部实现？      │
+│   ❌ ChatService import PgvectorRepo 直接实现             │
+│   ✅ ChatService import ISearchRepo 抽象接口              │
+│                                                         │
+│ □ 铁律2 依赖倒置                                         │
+│   高层模块是否依赖了低层具体实现？                           │
+│   ❌ AgentService new EmbeddingService()                 │
+│   ✅ AgentService constructor(@Inject('IEmbedding'))      │
+│                                                         │
+│ □ 铁律3 单一变更源                                       │
+│   如果下个 Sprint 要换 Embedding 模型，要动几个文件？        │
+│   ❌ > 2 个文件 → 耦合                                   │
+│   ✅ 1 个文件 (IEmbedding 的新实现)                       │
+│                                                         │
+│ □ 铁律4 接口即合同                                       │
+│   所有跨模块通信的接口/类型是否已在 shared/ 或 interfaces/   │
+│   中定义，而不是各模块各定义一套？                           │
+│                                                         │
+│ □ 铁律5 不可变数据                                       │
+│   是否直接修改了传入参数？                                  │
+│   ❌ entity.status = 'completed'; return entity           │
+│   ✅ return { ...entity, status: 'completed' }            │
+│                                                         │
+│ □ 铁律6 测试安全网                                       │
+│   改动导致已有测试失败了吗？                                │
+│   新增模块有 ≥80% 测试覆盖吗？                              │
+│                                                         │
+│ □ 铁律7 三次原则                                         │
+│   本次改动有没有"第 1 次出现就抽象"的代码？                  │
+│   所有抽象标记是否写了 @abstract-candidate (Seen: N/3)？    │
+│                                                         │
+│ □ 反模式扫描                                             │
+│   有没有出现：循环依赖 / 跨层调用 / 硬编码配置 / God Service  │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+#### 0.8.2 违规分级与处置
+
+| 级别 | 定义 | 处置 |
+|------|------|------|
+| 🛑 **阻断** | 违反铁律 1-5 中任意一条 | **不许提交**，立即修复 |
+| ⚠️ **警告** | 测试覆盖率 < 80%、第 1 次就抽象 | 标记 @todo，下次提交前修复 |
+| 💡 **建议** | 代码可以更简洁、命名可以更好 | 记录到技术债清单，择机偿还 |
+
+#### 0.8.3 目录边界物理隔离
+
+```
+apps/server/src/
+├── modules/                    # 业务模块 — 模块间只能依赖接口
+│   ├── auth/                   # AuthModule
+│   ├── knowledge/              # KnowledgeModule
+│   ├── chat/                   # ChatModule
+│   ├── agent/                  # AgentModule
+│   └── schedule/               # ScheduleModule
+│
+├── ai/                         # AI 引擎 — 定义接口，不依赖任何 module
+│   ├── interfaces/             # IEmbedding / ISearch / IModelProvider
+│   ├── gateway/                # 多模型网关实现
+│   ├── rag/                    # RAG 管线实现
+│   └── testing/                # AI 测试工具
+│
+├── common/                     # 全局基础 — 不依赖任何 module 或 ai
+│   ├── interceptors/
+│   ├── filters/
+│   ├── guards/
+│   └── decorators/
+│
+└── infrastructure/             # 基础设施 — 仅被 modules/ 依赖
+    ├── database/               # PrismaService
+    ├── cache/                  # RedisService
+    ├── queue/                  # QueueService
+    └── storage/                # StorageService
+
+依赖方向 (单向, 不可逆):
+  modules/ → ai/interfaces/ → ai/ 实现
+  modules/ → infrastructure/
+  common/   谁都不依赖
+  ❌ ai/ → modules/     (AI 引擎不碰业务模块)
+  ❌ infrastructure/ → modules/  (基础设施不碰业务)
+  ❌ modules/A → modules/B 的内部 Service  (模块间只走接口)
+```
+
+#### 0.8.4 边界违规示例（开发时我会主动喊停）
+
+```typescript
+// ❌ 边界违规 1: ChatModule 直接 import KnowledgeModule 的内部 Service
+// apps/server/src/modules/chat/chat.service.ts
+import { PgvectorSearchService } from '../knowledge/search/pgvector-search.service'
+//                                 ↑ 这是 knowledge 模块的内部实现！
+// 修复: import { ISearchService } from '@/ai/interfaces'
+//       NestJS DI 注入具体实现，ChatService 只依赖接口
+
+// ❌ 边界违规 2: AI 引擎依赖业务模块
+// apps/server/src/ai/rag/search.service.ts
+import { KnowledgeBaseService } from '../../modules/knowledge/knowledge-base.service'
+//                                 ↑ AI 引擎不应该知道业务模块的存在
+// 修复: ISearchService 接口放在 ai/interfaces/,
+//       实现在 modules/knowledge/ 中，通过 DI 注入
+
+// ❌ 边界违规 3: 前端组件直接 import 后端 Prisma 类型
+// packages/ui/src/ai/chat/ChatView.vue
+import type { Message } from '@prisma/client'
+//                           ↑ 前端不应该知道 ORM schema
+// 修复: 类型定义在 packages/shared/src/types/chat.ts
+//       前后端都从 shared 引入
+
+// ❌ 边界违规 4: 硬编码配置
+// apps/server/src/ai/gateway/gateway.ts
+const DEEPSEEK_API_KEY = 'sk-xxxx'
+//                        ↑ 密钥进代码 = 安全事故
+// 修复: process.env.DEEPSEEK_API_KEY, .env 不入库
+```
+
+#### 0.8.5 我的承诺
+
+```
+每个文件写完后:
+  1. 检查 7 条铁律 → 有违反立即改
+  2. 检查 import 方向 → 有逆依赖立即改
+  3. 检查是否有硬编码 → 有立即提取
+
+提交前:
+  1. 过一遍边界检查卡 (8 项全勾)
+  2. 派 code-reviewer 独立审查
+  3. 审查报告中标记 "boundary violation" 的 → 🛑 阻断提交
+
+如果我发现自己在违反边界:
+  → 主动停止，修复后继续
+  → 不会因为"赶进度"跳过一个检查
 ```
 
 ---
