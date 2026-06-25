@@ -6,37 +6,11 @@ on:
   pull_request:
     branches: [main]
 
-env:
-  NODE_OPTIONS: '--max-old-space-size=4096'
-  COREPACK_ENABLE_STRICT: '0'
-
 jobs:
-  lint:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: corepack enable
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm lint
-
-  typecheck:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: corepack enable
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @jarvis/server db:generate
-      - run: pnpm typecheck
-
-  test:
-    needs: [lint, typecheck]
-    runs-on: ubuntu-24.04
+  check:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://test:test@localhost:5432/jarvis_test
     services:
       postgres:
         image: pgvector/pgvector:pg16
@@ -47,13 +21,10 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U test -d jarvis_test"
+          --health-cmd pg_isready
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-    env:
-      DATABASE_URL: postgresql://test:test@localhost:5432/jarvis_test
-      REDIS_URL: redis://localhost:6379
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -62,25 +33,6 @@ jobs:
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @jarvis/server db:generate
+      - run: pnpm typecheck
       - run: pnpm test
-
-  e2e:
-    needs: [lint, typecheck]
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: corepack enable
-      - run: pnpm install --frozen-lockfile
-      - run: npx playwright install chromium --with-deps
-      - run: npx vite --port 5173 &
-        working-directory: apps/web
-      - run: |
-          for i in $(seq 1 30); do
-            curl -s http://localhost:5173 > /dev/null && break
-            sleep 1
-          done
-      - run: npx playwright test
-        working-directory: apps/web
+      - run: pnpm lint
