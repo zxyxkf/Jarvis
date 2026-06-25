@@ -11,33 +11,33 @@ env:
 
 jobs:
   lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'pnpm'
+          cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
 
   typecheck:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'pnpm'
+          cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @jarvis/server db:generate
       - run: pnpm typecheck
 
   test:
     needs: [lint, typecheck]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     services:
       postgres:
         image: pgvector/pgvector:pg16
@@ -45,33 +45,37 @@ jobs:
           POSTGRES_DB: jarvis_test
           POSTGRES_USER: test
           POSTGRES_PASSWORD: test
-        ports: ['5432:5432']
+        ports:
+          - 5432:5432
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U test -d jarvis_test"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+    env:
+      DATABASE_URL: postgresql://test:test@localhost:5432/jarvis_test
+      REDIS_URL: redis://localhost:6379
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'pnpm'
+          cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @jarvis/server db:generate
       - run: pnpm test
 
   e2e:
     needs: [lint, typecheck]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'pnpm'
+          cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: npx playwright install chromium --with-deps
       - run: pnpm --filter @jarvis/web test:e2e
