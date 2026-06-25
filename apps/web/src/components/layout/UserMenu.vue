@@ -27,7 +27,7 @@ function keepFlyout() { if (flyoutTimer) clearTimeout(flyoutTimer); flyoutOpen.v
 </script>
 
 <template>
-  <DropdownMenuRoot v-model:open="open">
+  <DropdownMenuRoot>
     <DropdownMenuTrigger class="avatar-btn">
       <div class="avatar">{{ auth.user ? initials(auth.user.name) : '?' }}</div>
       <div class="avatar-name">{{ auth.user?.name || '未登录' }}</div>
