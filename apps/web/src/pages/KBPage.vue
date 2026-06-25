@@ -101,7 +101,6 @@ async function handleUpload(e: Event) {
       <div v-if="!selectedKB && bases.length > 0" class="empty">选择一个知识库查看文档</div>
       <div v-if="bases.length === 0 && !loading" class="empty">暂无知识库，点击「+ 新建」创建</div>
     </main>
-    </main>
       </SplitterPanel>
     </SplitterGroup>
   </div>
