@@ -39,10 +39,8 @@ function handleSend(text: string) {
       <div class="sidebar-section">
         <label class="sidebar-label">主题</label>
         <select :value="theme.active" @change="theme.switchTo(($event.target as HTMLSelectElement).value as ThemePreset)" class="select">
-          <option value="chatgpt-dark">ChatGPT 暗色</option>
-          <option value="jarvis-blue">Jarvis 科技蓝</option>
-          <option value="notion-light">Notion 极简白</option>
-          <option value="cyber-terminal">赛博终端</option>
+          <option value="chatgpt-dark">暗色</option>
+          <option value="notion-light">极简白</option>
         </select>
       </div>
 

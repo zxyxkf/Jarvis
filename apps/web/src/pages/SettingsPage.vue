@@ -52,7 +52,7 @@ function handleLogout() {
               class="px-3 py-2 rounded-lg text-xs transition-colors"
               :class="theme.active === key ? 'bg-[var(--color-accent-muted)] text-[var(--color-accent)] border border-[var(--color-accent)]' : 'bg-[var(--color-bg-tertiary)] border border-[var(--color-border)] hover:border-[var(--color-accent)]'"
               @click="theme.switchTo(key as ThemePreset)"
-            >{{ { 'chatgpt-dark': 'ChatGPT 暗色', 'jarvis-blue': 'Jarvis 蓝', 'notion-light': 'Notion 白', 'cyber-terminal': '赛博终端' }[key] }}</button>
+            >{{ { 'chatgpt-dark': '暗色', 'notion-light': '极简白' }[key] }}</button>
           </div>
         </section>
       </div>
