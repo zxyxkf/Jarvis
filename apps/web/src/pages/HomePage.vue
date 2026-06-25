@@ -143,7 +143,7 @@ function handleSend(text: string) {
 .input-bar { padding:16px 24px 24px; border-top:1px solid var(--color-border-light); background:var(--color-bg-primary); display:flex }
 .input-wrapper { flex:1; display:flex; align-items:flex-end; background:var(--color-bg-tertiary); border:1px solid var(--color-border); border-radius:16px; padding:8px 10px 8px 18px; transition:border-color .2s }
 .input-wrapper:focus-within { border-color:var(--color-accent); box-shadow:0 2px 16px rgba(16,163,127,.1) }
-.chat-input { flex:1; background:transparent; border:none; padding:10px 0; font-size:15px; color:var(--color-text-primary); outline:none; resize:none; max-height:180px; line-height:1.55; font-family:inherit }
+.chat-input { flex:1; background:transparent; border:none; padding:10px 0; font-size:15px; color:var(--color-text-primary); outline:none; resize:vertical; min-height:24px; max-height:400px; overflow-y:auto; line-height:1.55; font-family:inherit }
 .chat-input::placeholder { color:var(--color-text-muted); opacity:.6 }
 .chat-input:disabled { opacity:.5 }
 .send-btn { width:42px; height:42px; flex-shrink:0; background:var(--color-accent); border:none; border-radius:10px; color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; margin-left:10px }
