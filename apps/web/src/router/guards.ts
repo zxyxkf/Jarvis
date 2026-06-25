@@ -4,10 +4,8 @@ import { useAuthStore } from '@/stores/auth'
 export function setupAuthGuard(router: Router) {
   router.beforeEach((to) => {
     const auth = useAuthStore()
-    // Allow login page without auth
-    if (to.path === '/login') return true
-    // Redirect unauthenticated users
-    if (!auth.isLoggedIn) return '/login'
+    if (to.name === 'login') return true
+    if (!auth.isLoggedIn) return { name: 'login' }
     return true
   })
 }
