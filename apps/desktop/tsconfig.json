@@ -2,9 +2,9 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "paths": {
-      "@/*": ["./src/*"],
+      "@/*": ["../web/src/*"],
       "@jarvis/shared": ["../../packages/shared/src"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "../web/src"]
 }
