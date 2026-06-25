@@ -120,7 +120,7 @@ function onDividerUp() {
           <textarea
             v-model="inputText"
             class="chat-input"
-            placeholder="输入问题... (Enter 发送, Shift+Enter 换行)"
+            placeholder="输入问题..."
             :disabled="isStreaming"
             @keydown="(e: KeyboardEvent) => { if (e.key === 'Enter' && !e.shiftKey && !isStreaming) { e.preventDefault(); handleSend(inputText) } }"
           />
