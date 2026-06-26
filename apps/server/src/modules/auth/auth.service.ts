@@ -1,13 +1,17 @@
-import { Injectable, Inject, UnauthorizedException, ConflictException } from '@nestjs/common'
+import { Injectable, Inject, UnauthorizedException, ConflictException, Logger } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import * as bcrypt from 'bcryptjs'
 import { PrismaService } from '@/infrastructure/database/prisma.service'
+import { StorageService } from '@/infrastructure/storage/storage.service'
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name)
+
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(JwtService) private readonly jwtService: JwtService,
+    @Inject(StorageService) private readonly storage: StorageService,
   ) {}
 
   async register(email: string, password: string, name: string) {
@@ -69,9 +73,15 @@ export class AuthService {
     return user
   }
 
-  async updateProfile(userId: string, data: { name?: string; avatarUrl?: string; currentPassword?: string; newPassword?: string }) {
+  async updateProfile(userId: string, data: { name?: string; email?: string; avatarUrl?: string | null; currentPassword?: string; newPassword?: string }) {
     const updateData: Record<string, unknown> = {}
     if (data.name) updateData['name'] = data.name
+    if (data.email) {
+      // Check email uniqueness
+      const existing = await this.prisma.user.findUnique({ where: { email: data.email } })
+      if (existing && existing.id !== userId) throw new ConflictException('邮箱已被使用')
+      updateData['email'] = data.email
+    }
     if (data.avatarUrl !== undefined) updateData['avatarUrl'] = data.avatarUrl
 
     if (data.currentPassword && data.newPassword) {
@@ -88,6 +98,17 @@ export class AuthService {
       where: { id: userId },
       data: updateData,
       select: { id: true, email: true, name: true, avatarUrl: true, role: true, createdAt: true },
+    })
+  }
+
+  async uploadAvatar(userId: string, file: Express.Multer.File) {
+    const ext = file.originalname.split('.').pop() || 'png'
+    const key = `avatars/${userId}.${ext}`
+    const avatarUrl = await this.storage.uploadFile(key, file.buffer, file.mimetype)
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { avatarUrl: `minio:${avatarUrl}` },
+      select: { id: true, avatarUrl: true },
     })
   }
 }
