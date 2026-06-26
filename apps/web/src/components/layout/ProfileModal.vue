@@ -6,7 +6,6 @@ const emit = defineEmits<{ close: [] }>()
 const auth = useAuthStore()
 
 const name = ref(auth.user?.name || '')
-const email = ref(auth.user?.email || '')
 const currentPassword = ref('')
 const newPassword = ref('')
 const avatarFile = ref<File | null>(null)
@@ -33,7 +32,6 @@ async function handleSave() {
     const data: Record<string, unknown> = {}
 
     if (name.value.trim() && name.value !== auth.user?.name) data['name'] = name.value.trim()
-    if (email.value.trim() && email.value !== auth.user?.email) data['email'] = email.value.trim()
 
     if (avatarFile.value) {
       // Upload avatar via FormData to dedicated endpoint or base64 inline
@@ -105,12 +103,9 @@ function initials(n: string): string { return n.slice(0, 2).toUpperCase() }
 
       <div class="form-fields">
         <label class="field-label">昵称</label>
-        <input v-model="name" class="field-input" placeholder="你的名字" />
+        <input v-model="name" class="field-input" placeholder="用于登录的昵称" />
 
-        <label class="field-label" style="margin-top:12px">邮箱</label>
-        <input v-model="email" type="email" class="field-input" placeholder="your@email.com" />
-
-        <label class="field-label" style="margin-top:12px">修改密码（留空不修改）</label>
+        <label class="field-label" style="margin-top:16px">修改密码（留空不修改）</label>
         <input v-model="currentPassword" type="password" class="field-input" placeholder="当前密码" />
         <input v-model="newPassword" type="password" class="field-input" placeholder="新密码（至少6位）" style="margin-top:8px" />
       </div>
