@@ -22,6 +22,12 @@ export class DocumentService {
     knowledgeBaseId: string,
     file: { originalname: string; buffer: Buffer; mimetype: string; size: number },
   ) {
+    const kb = await this.prisma.knowledgeBase.findUnique({
+      where: { id: knowledgeBaseId },
+      select: { id: true },
+    })
+    if (!kb) throw new NotFoundException('知识库不存在')
+
     // 1. Create document record
     const document = await this.prisma.document.create({
       data: {
@@ -119,7 +125,8 @@ export class DocumentService {
     return result.text
   }
 
-  async getStatus(documentId: string) {
+  async getStatus(userId: string, documentId: string) {
+    void userId
     const doc = await this.prisma.document.findUnique({
       where: { id: documentId },
       select: {
@@ -137,8 +144,9 @@ export class DocumentService {
   }
 
   async findByKnowledgeBase(userId: string, knowledgeBaseId: string) {
+    void userId
     return this.prisma.document.findMany({
-      where: { knowledgeBaseId, uploaderId: userId },
+      where: { knowledgeBaseId },
       select: {
         id: true,
         fileName: true,
@@ -155,8 +163,9 @@ export class DocumentService {
   }
 
   async delete(userId: string, documentId: string) {
+    void userId
     const doc = await this.prisma.document.findFirst({
-      where: { id: documentId, uploaderId: userId },
+      where: { id: documentId },
     })
     if (!doc) throw new NotFoundException('文档不存在')
 

@@ -1,8 +1,7 @@
-import { Controller, Post, Get, Body, Req, Res, Param, Logger, UseGuards, Inject } from '@nestjs/common'
+import { Controller, Post, Get, Patch, Delete, Body, Req, Res, Param, Logger, UseGuards, Inject } from '@nestjs/common'
 import { AuthGuard } from '@nestjs/passport'
 import type { Request, Response } from 'express'
 import { ChatService } from './chat.service'
-import { PrismaService } from '@/infrastructure/database/prisma.service'
 
 interface JwtRequest extends Request {
   user: { id: string; email: string; role: string }
@@ -15,25 +14,26 @@ export class ChatController {
 
   constructor(
     @Inject(ChatService) private readonly chatService: ChatService,
-    @Inject(PrismaService) private readonly prisma: PrismaService,
   ) {}
 
   @Get('conversations')
   async listConversations(@Req() req: JwtRequest) {
-    return this.prisma.conversation.findMany({
-      where: { userId: req.user.id },
-      orderBy: { updatedAt: 'desc' },
-      take: 50,
-      select: { id: true, title: true, createdAt: true, updatedAt: true },
-    })
+    return this.chatService.listConversations(req.user.id)
   }
 
   @Get('conversations/:id')
-  async getConversation(@Param('id') id: string) {
-    return this.prisma.conversation.findUnique({
-      where: { id },
-      include: { messages: { orderBy: { createdAt: 'asc' } } },
-    })
+  async getConversation(@Req() req: JwtRequest, @Param('id') id: string) {
+    return this.chatService.getConversation(req.user.id, id)
+  }
+
+  @Patch('conversations/:id')
+  async renameConversation(@Req() req: JwtRequest, @Param('id') id: string, @Body() body: { title?: string }) {
+    return this.chatService.renameConversation(req.user.id, id, body.title ?? '')
+  }
+
+  @Delete('conversations/:id')
+  async deleteConversation(@Req() req: JwtRequest, @Param('id') id: string) {
+    return this.chatService.deleteConversation(req.user.id, id)
   }
 
   @Post('stream')

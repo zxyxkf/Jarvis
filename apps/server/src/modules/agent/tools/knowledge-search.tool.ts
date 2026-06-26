@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import type { ITool, ToolDefinition } from '@/ai/agent/tool.interface'
-import type { SearchService } from '@/modules/knowledge/services/search.service'
+import { SearchService } from '@/modules/knowledge/services/search.service'
 
 @Injectable()
 export class KnowledgeSearchTool implements ITool {

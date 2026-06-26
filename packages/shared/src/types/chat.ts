@@ -12,12 +12,40 @@ export interface ChatMessage {
   createdAt: string
 }
 
-export interface Citation {
+export interface DocumentCitation {
+  type?: 'document'
   chunkId: string
   documentName: string
   content: string
   score: number
 }
+
+export interface ProductCitation {
+  type: 'product'
+  productId: string
+  knowledgeBaseId?: string
+  productName: string
+  category?: string | null
+  brand?: string | null
+  skuCode?: string
+  imageUrl?: string
+  price?: number | null
+  stockStatus?: string
+  sellingPoints?: string | null
+  notes?: string | null
+  skus?: Array<{
+    skuCode: string
+    color?: string | null
+    size?: string | null
+    price?: number | null
+    stockStatus: string
+    platformLink?: string | null
+  }>
+  faqs?: Array<{ question: string; answer: string }>
+  score: number
+}
+
+export type Citation = DocumentCitation | ProductCitation
 
 export interface Conversation {
   id: string

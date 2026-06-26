@@ -63,13 +63,20 @@ export const useAuthStore = defineStore('auth', () => {
     const body = await res.json()
     if (body.code === 0) {
       user.value = body.data
+      return true
     }
+    if (res.status === 401 || body.message === 'Unauthorized') {
+      const refreshed = await refreshAccessToken()
+      if (refreshed && accessToken.value) return fetchProfile()
+      clearTokens()
+    }
+    return false
   }
 
   async function refreshAccessToken() {
     if (!refreshToken.value) {
       clearTokens()
-      return
+      return false
     }
     const res = await fetch('/api/v1/auth/refresh', {
       method: 'POST',
@@ -79,9 +86,17 @@ export const useAuthStore = defineStore('auth', () => {
     const body = await res.json()
     if (body.code === 0) {
       setTokens(body.data.accessToken, body.data.refreshToken)
+      return true
     } else {
       clearTokens()
+      return false
     }
+  }
+
+  async function ensureSession() {
+    if (!accessToken.value) return false
+    if (user.value) return true
+    return fetchProfile()
   }
 
   async function updateProfile(data: { name?: string; avatarUrl?: string; currentPassword?: string; newPassword?: string }) {
@@ -102,7 +117,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   return {
     user, accessToken, isLoggedIn,
-    login, register, logout, fetchProfile, updateProfile, refreshAccessToken,
+    login, register, logout, fetchProfile, updateProfile, refreshAccessToken, ensureSession,
     getAuthHeaders: (): Record<string, string> => accessToken.value
       ? { Authorization: `Bearer ${accessToken.value}` }
       : {},

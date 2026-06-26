@@ -24,6 +24,11 @@ model User {
   conversations  Conversation[]
   knowledgeBases KnowledgeBase[]
   documents      Document[]
+  maintainedProducts Product[] @relation("ProductMaintainer")
+  assets             Asset[]
+  importJobs         ImportJob[]
+  platformConnections PlatformConnection[]
+  platformSyncJobs     PlatformSyncJob[]
   agentTasks     AgentTask[]
   apiKeys        ApiKey[]
   auditLogs      AuditLog[]
@@ -50,6 +55,11 @@ model KnowledgeBase {
   owner       User     @relation(fields: [ownerId], references: [id])
   documents   Document[]
   chunks      Chunk[]
+  products    Product[]
+  assets      Asset[]
+  importJobs  ImportJob[]
+  platformConnections PlatformConnection[]
+  platformSyncJobs     PlatformSyncJob[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -89,6 +99,201 @@ model Chunk {
 
   @@index([knowledgeBaseId])
   @@index([documentId])
+}
+
+// ============================================================
+// Ecommerce Product Knowledge
+// ============================================================
+
+model Product {
+  id              String        @id @default(uuid())
+  knowledgeBaseId String
+  knowledgeBase   KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id])
+  name            String
+  category        String?
+  brand           String?
+  series          String?
+  sellingPoints   String?
+  description     String?
+  notes           String?
+  status          ProductStatus @default(ACTIVE)
+  source          ProductSource @default(MANUAL)
+  searchableText  String        @default("")
+  maintainerId    String
+  maintainer      User          @relation("ProductMaintainer", fields: [maintainerId], references: [id])
+  skus            ProductSku[]
+  assets          ProductAsset[]
+  faqs            ProductFAQ[]
+  sourceMappings  SourceMapping[]
+  deletedAt       DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([knowledgeBaseId])
+  @@index([status])
+  @@index([source])
+  @@index([deletedAt])
+}
+
+model ProductSku {
+  id                String          @id @default(uuid())
+  productId         String
+  product           Product         @relation(fields: [productId], references: [id])
+  skuCode           String
+  color             String?
+  size              String?
+  spec              String?
+  price             Float?
+  stockStatus       StockStatus     @default(UNKNOWN)
+  platformLink      String?
+  externalProductId String?
+  externalSkuId     String?
+  source            ProductSource   @default(MANUAL)
+  deletedAt         DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@unique([skuCode, deletedAt])
+  @@index([productId])
+  @@index([stockStatus])
+  @@index([externalProductId])
+  @@index([externalSkuId])
+}
+
+model Asset {
+  id              String        @id @default(uuid())
+  knowledgeBaseId String
+  knowledgeBase   KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id])
+  fileName        String
+  fileType        String
+  mimeType        String
+  fileSize        Int
+  fileUrl         String
+  assetType       AssetType     @default(IMAGE)
+  uploaderId      String
+  uploader        User          @relation(fields: [uploaderId], references: [id])
+  products        ProductAsset[]
+  deletedAt       DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([knowledgeBaseId])
+  @@index([assetType])
+  @@index([deletedAt])
+}
+
+model ProductAsset {
+  id        String   @id @default(uuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  assetId   String
+  asset     Asset    @relation(fields: [assetId], references: [id])
+  isPrimary Boolean  @default(false)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@unique([productId, assetId])
+  @@index([productId])
+  @@index([assetId])
+}
+
+model ProductFAQ {
+  id        String   @id @default(uuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  question  String
+  answer    String
+  sortOrder Int      @default(0)
+  deletedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productId])
+  @@index([deletedAt])
+}
+
+model SourceMapping {
+  id                String        @id @default(uuid())
+  productId         String?
+  product           Product?      @relation(fields: [productId], references: [id])
+  platform          String
+  shop              String?
+  externalProductId String
+  externalSkuId     String?
+  lastSyncedAt      DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@unique([platform, externalProductId, externalSkuId])
+  @@index([productId])
+}
+
+model ImportJob {
+  id              String        @id @default(uuid())
+  knowledgeBaseId String
+  knowledgeBase   KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id])
+  fileName        String
+  source          ProductSource @default(EXCEL)
+  status          ImportStatus  @default(COMPLETED)
+  totalRows       Int           @default(0)
+  createdRows     Int           @default(0)
+  skippedRows     Int           @default(0)
+  errorRows       Int           @default(0)
+  report          Json?
+  creatorId       String
+  creator         User          @relation(fields: [creatorId], references: [id])
+  createdAt       DateTime      @default(now())
+
+  @@index([knowledgeBaseId])
+  @@index([status])
+}
+
+model PlatformConnection {
+  id              String        @id @default(uuid())
+  knowledgeBaseId String
+  knowledgeBase   KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id])
+  platform        String
+  shop            String?
+  name            String
+  config          Json?
+  status          PlatformConnectionStatus @default(DISABLED)
+  lastSyncAt      DateTime?
+  creatorId       String
+  creator         User          @relation(fields: [creatorId], references: [id])
+  syncJobs        PlatformSyncJob[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@unique([knowledgeBaseId, platform, shop])
+  @@index([knowledgeBaseId])
+  @@index([platform])
+  @@index([status])
+}
+
+model PlatformSyncJob {
+  id              String        @id @default(uuid())
+  knowledgeBaseId String
+  knowledgeBase   KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id])
+  connectionId    String?
+  connection      PlatformConnection? @relation(fields: [connectionId], references: [id])
+  platform        String
+  shop            String?
+  mode            PlatformSyncMode
+  status          PlatformSyncStatus @default(COMPLETED)
+  totalItems      Int           @default(0)
+  createdItems    Int           @default(0)
+  skippedItems    Int           @default(0)
+  errorItems      Int           @default(0)
+  report          Json?
+  creatorId       String
+  creator         User          @relation(fields: [creatorId], references: [id])
+  createdAt       DateTime      @default(now())
+
+  @@index([knowledgeBaseId])
+  @@index([connectionId])
+  @@index([platform])
+  @@index([status])
+  @@index([createdAt])
 }
 
 // ============================================================
@@ -186,6 +391,51 @@ enum AgentStatus {
   PENDING
   RUNNING
   WAITING_HUMAN
+  COMPLETED
+  FAILED
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+  DRAFT
+}
+
+enum ProductSource {
+  MANUAL
+  EXCEL
+  API
+}
+
+enum StockStatus {
+  IN_STOCK
+  LOW_STOCK
+  OUT_OF_STOCK
+  UNKNOWN
+}
+
+enum AssetType {
+  IMAGE
+  VIDEO
+  FILE
+}
+
+enum ImportStatus {
+  COMPLETED
+  FAILED
+}
+
+enum PlatformConnectionStatus {
+  ENABLED
+  DISABLED
+}
+
+enum PlatformSyncMode {
+  PREVIEW
+  SYNC_MISSING
+}
+
+enum PlatformSyncStatus {
   COMPLETED
   FAILED
 }

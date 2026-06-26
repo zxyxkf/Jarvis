@@ -61,6 +61,7 @@ coverage
 .eslintcache
 .stylelintcache
 .cache
+.codegraph/
 .parcel-cache
 .turbo/
 

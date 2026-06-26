@@ -5,7 +5,8 @@ import { AgentExecutor } from '@/ai/agent/agent-executor'
 import { ToolRegistry } from '@/ai/agent/tool-registry'
 import { KnowledgeSearchTool } from './tools/knowledge-search.tool'
 import { DateTimeTool } from './tools/date-time.tool'
+import { ToolBootstrapService } from './tool-bootstrap.service'
 import { KnowledgeModule } from '@/modules/knowledge/knowledge.module'
 import { ModelGateway } from '@/ai/gateway/model-gateway'
-@Module({imports:[KnowledgeModule],controllers:[AgentController],providers:[AgentService,AgentExecutor,ToolRegistry,ModelGateway,KnowledgeSearchTool,DateTimeTool],exports:[AgentService]})
+@Module({imports:[KnowledgeModule],controllers:[AgentController],providers:[AgentService,AgentExecutor,ToolRegistry,ModelGateway,KnowledgeSearchTool,DateTimeTool,ToolBootstrapService],exports:[AgentService]})
 export class AgentModule {}

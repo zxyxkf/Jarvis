@@ -34,4 +34,4 @@ EXPOSE 3000
 # Generate Prisma client at runtime
 RUN npx prisma generate --schema=./prisma/schema.prisma
 
-CMD ["node", "dist/main.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy --schema=./prisma/schema.prisma && node dist/main.js"]

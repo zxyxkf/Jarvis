@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import type { Citation } from '@jarvis/shared'
 import { useAuthStore } from '@/stores/auth'
 
 export interface ChatMessage {
@@ -9,15 +10,29 @@ export interface ChatMessage {
   timestamp: number
 }
 
-export interface Citation {
-  chunkId: string
-  documentName: string
-  content: string
-  score: number
+export interface ConversationSummary {
+  id: string
+  title: string
+  createdAt: string
+  updatedAt: string
 }
+
+export interface ConversationDetail extends ConversationSummary {
+  messages: Array<{
+    id: string
+    role: ChatMessage['role']
+    content: string
+    citations?: Citation[]
+    createdAt: string
+  }>
+}
+
+export type { Citation }
 
 export function useStreamChat() {
   const messages = ref<ChatMessage[]>([])
+  const conversations = ref<ConversationSummary[]>([])
+  const currentConversationId = ref<string | null>(null)
   const isStreaming = ref(false)
   const abortController = ref<AbortController | null>(null)
 
@@ -45,6 +60,7 @@ export function useStreamChat() {
     content: string,
     options?: { knowledgeBaseId?: string; conversationId?: string },
   ) {
+    const conversationId = options?.conversationId ?? currentConversationId.value ?? undefined
     addUserMessage(content)
     const assistantId = addAssistantPlaceholder()
     isStreaming.value = true
@@ -60,11 +76,11 @@ export function useStreamChat() {
           'Content-Type': 'application/json',
           ...authStore.getAuthHeaders(),
         },
-        body: JSON.stringify({
-          content,
-          knowledgeBaseId: options?.knowledgeBaseId,
-          conversationId: options?.conversationId,
-        }),
+          body: JSON.stringify({
+            content,
+            knowledgeBaseId: options?.knowledgeBaseId,
+            conversationId,
+          }),
         signal: controller.signal,
       })
 
@@ -90,10 +106,16 @@ export function useStreamChat() {
               const msg = messages.value.find((m) => m.id === assistantId)
               if (!msg) continue
 
-              if (event.type === 'token') {
+              if (event.type === 'conversation') {
+                const data = event.data as { conversationId?: string }
+                if (data.conversationId) currentConversationId.value = data.conversationId
+              } else if (event.type === 'token') {
                 msg.content += event.data as string
               } else if (event.type === 'citations') {
                 msg.citations = event.data as Citation[]
+              } else if (event.type === 'done') {
+                const data = event.data as { conversationId?: string }
+                if (data.conversationId) currentConversationId.value = data.conversationId
               } else if (event.type === 'error') {
                 msg.content = `[错误] ${event.data}`
               }
@@ -112,7 +134,64 @@ export function useStreamChat() {
       }
     } finally {
       isStreaming.value = false
+      await fetchConversations()
     }
+  }
+
+  async function fetchConversations() {
+    const authStore = useAuthStore()
+    const res = await fetch('/api/v1/chat/conversations', { headers: authStore.getAuthHeaders() })
+    const body = await res.json()
+    conversations.value = (body.data as ConversationSummary[]) ?? []
+  }
+
+  async function loadConversation(conversationId: string) {
+    if (isStreaming.value) return
+    const authStore = useAuthStore()
+    const res = await fetch(`/api/v1/chat/conversations/${conversationId}`, { headers: authStore.getAuthHeaders() })
+    const body = await res.json()
+    const conversation = body.data as ConversationDetail | null
+    if (!conversation) return
+    currentConversationId.value = conversation.id
+    messages.value = conversation.messages.map((msg) => ({
+      id: msg.id,
+      role: msg.role,
+      content: msg.content,
+      citations: msg.citations,
+      timestamp: new Date(msg.createdAt).getTime(),
+    }))
+  }
+
+  function startNewConversation() {
+    if (isStreaming.value) return
+    currentConversationId.value = null
+    clear()
+  }
+
+  async function renameConversation(conversationId: string, title: string) {
+    const authStore = useAuthStore()
+    const res = await fetch(`/api/v1/chat/conversations/${conversationId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authStore.getAuthHeaders() },
+      body: JSON.stringify({ title }),
+    })
+    const body = await res.json()
+    if (body.code === 0) await fetchConversations()
+    return body
+  }
+
+  async function deleteConversation(conversationId: string) {
+    if (isStreaming.value) return
+    const authStore = useAuthStore()
+    await fetch(`/api/v1/chat/conversations/${conversationId}`, {
+      method: 'DELETE',
+      headers: authStore.getAuthHeaders(),
+    })
+    if (currentConversationId.value === conversationId) {
+      currentConversationId.value = null
+      clear()
+    }
+    await fetchConversations()
   }
 
   function abort() {
@@ -123,5 +202,9 @@ export function useStreamChat() {
     messages.value = []
   }
 
-  return { messages, isStreaming, sendMessage, abort, clear }
+  return {
+    messages, conversations, currentConversationId, isStreaming,
+    sendMessage, fetchConversations, loadConversation, startNewConversation,
+    renameConversation, deleteConversation, abort, clear,
+  }
 }

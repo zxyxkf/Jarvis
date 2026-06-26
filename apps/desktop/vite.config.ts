@@ -10,7 +10,15 @@ export default defineConfig({
       '@jarvis/shared': resolve(__dirname, '../../packages/shared/src'),
     },
   },
-  server: { port: 1420 },
+  server: {
+    port: 1420,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+    },
+  },
   clearScreen: false,
   test: { passWithNoTests: true },
 })

@@ -20,6 +20,7 @@
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f",
     "db:migrate": "pnpm --filter @jarvis/server db:migrate",
+    "db:deploy": "pnpm --filter @jarvis/server db:deploy",
     "db:studio": "pnpm --filter @jarvis/server db:studio",
     "clean": "rimraf node_modules apps/*/node_modules packages/*/node_modules"
   },

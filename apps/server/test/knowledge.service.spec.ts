@@ -1,11 +1,11 @@
 import { Test } from '@nestjs/testing'
 import { KnowledgeService } from '../src/modules/knowledge/services/knowledge.service'
 import { PrismaService } from '../src/infrastructure/database/prisma.service'
-import { NotFoundException } from '@nestjs/common'
+import { BadRequestException, NotFoundException } from '@nestjs/common'
 
 describe('KnowledgeService', () => {
   let service: KnowledgeService
-  let prisma: { knowledgeBase: Record<string, jest.Mock> }
+  let prisma: Record<string, Record<string, jest.Mock> | jest.Mock>
 
   beforeEach(async () => {
     prisma = {
@@ -16,6 +16,16 @@ describe('KnowledgeService', () => {
         update: jest.fn(),
         delete: jest.fn(),
       },
+      $transaction: jest.fn(async (callback: (tx: typeof prisma) => unknown) => callback(prisma)),
+      product: { findMany: jest.fn(), deleteMany: jest.fn() },
+      productAsset: { deleteMany: jest.fn() },
+      productFAQ: { deleteMany: jest.fn() },
+      productSku: { deleteMany: jest.fn() },
+      sourceMapping: { deleteMany: jest.fn() },
+      asset: { deleteMany: jest.fn() },
+      importJob: { count: jest.fn() },
+      platformConnection: { findMany: jest.fn(), deleteMany: jest.fn() },
+      platformSyncJob: { updateMany: jest.fn(), deleteMany: jest.fn() },
       chunk: { deleteMany: jest.fn() },
       document: { deleteMany: jest.fn() },
     }
@@ -67,10 +77,39 @@ describe('KnowledgeService', () => {
     expect(result.name).toBe('updated')
   })
 
-  it('delete cascades chunks → documents → KB', async () => {
+  it('delete removes ecommerce and document data before deleting KB', async () => {
     prisma.knowledgeBase.findFirst.mockResolvedValue({ id: 'kb1' })
+    prisma.importJob.count.mockResolvedValue(0)
+    prisma.product.findMany.mockResolvedValue([{ id: 'p1' }, { id: 'p2' }])
+    prisma.platformConnection.findMany.mockResolvedValue([{ id: 'conn1' }])
+
     await service.delete('u1', 'kb1')
-    // Delete order matters for FK constraints
+
+    expect(prisma.$transaction).toHaveBeenCalled()
+    expect(prisma.productAsset.deleteMany).toHaveBeenCalledWith({ where: { productId: { in: ['p1', 'p2'] } } })
+    expect(prisma.productFAQ.deleteMany).toHaveBeenCalledWith({ where: { productId: { in: ['p1', 'p2'] } } })
+    expect(prisma.productSku.deleteMany).toHaveBeenCalledWith({ where: { productId: { in: ['p1', 'p2'] } } })
+    expect(prisma.sourceMapping.deleteMany).toHaveBeenCalledWith({ where: { productId: { in: ['p1', 'p2'] } } })
+    expect(prisma.platformSyncJob.updateMany).toHaveBeenCalledWith({
+      where: { connectionId: { in: ['conn1'] } },
+      data: { connectionId: null },
+    })
+    expect(prisma.platformSyncJob.deleteMany).toHaveBeenCalledWith({ where: { knowledgeBaseId: 'kb1' } })
+    expect(prisma.platformConnection.deleteMany).toHaveBeenCalledWith({ where: { knowledgeBaseId: 'kb1' } })
+    expect(prisma.importJob.count).toHaveBeenCalledWith({ where: { knowledgeBaseId: 'kb1' } })
+    expect(prisma.asset.deleteMany).toHaveBeenCalledWith({ where: { knowledgeBaseId: 'kb1' } })
+    expect(prisma.product.deleteMany).toHaveBeenCalledWith({ where: { knowledgeBaseId: 'kb1' } })
+    expect(prisma.chunk.deleteMany).toHaveBeenCalledWith({ where: { knowledgeBaseId: 'kb1' } })
+    expect(prisma.document.deleteMany).toHaveBeenCalledWith({ where: { knowledgeBaseId: 'kb1' } })
     expect(prisma.knowledgeBase.delete).toHaveBeenCalledWith({ where: { id: 'kb1' } })
+  })
+
+  it('rejects deleting a knowledge base that has import records', async () => {
+    prisma.knowledgeBase.findFirst.mockResolvedValue({ id: 'kb1' })
+    prisma.importJob.count.mockResolvedValue(1)
+
+    await expect(service.delete('u1', 'kb1')).rejects.toBeInstanceOf(BadRequestException)
+    expect(prisma.$transaction).not.toHaveBeenCalled()
+    expect(prisma.knowledgeBase.delete).not.toHaveBeenCalled()
   })
 })
