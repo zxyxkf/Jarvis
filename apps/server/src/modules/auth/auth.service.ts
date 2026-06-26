@@ -2,7 +2,6 @@ import { Injectable, Inject, UnauthorizedException, ConflictException, Logger } 
 import { JwtService } from '@nestjs/jwt'
 import * as bcrypt from 'bcryptjs'
 import { PrismaService } from '@/infrastructure/database/prisma.service'
-import { StorageService } from '@/infrastructure/storage/storage.service'
 
 @Injectable()
 export class AuthService {
@@ -11,7 +10,6 @@ export class AuthService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(JwtService) private readonly jwtService: JwtService,
-    @Inject(StorageService) private readonly storage: StorageService,
   ) {}
 
   async register(email: string, password: string, name: string) {
@@ -102,9 +100,13 @@ export class AuthService {
   }
 
   async uploadAvatar(userId: string, file: Express.Multer.File) {
+    // Lazy-load StorageService to avoid DI decorator issues with tsx
+    const { StorageService } = await import('@/infrastructure/storage/storage.service')
+    const storage = new StorageService()
+
     const ext = file.originalname.split('.').pop() || 'png'
     const key = `avatars/${userId}.${ext}`
-    const avatarUrl = await this.storage.uploadFile(key, file.buffer, file.mimetype)
+    const avatarUrl = await storage.uploadFile(key, file.buffer, file.mimetype)
     return this.prisma.user.update({
       where: { id: userId },
       data: { avatarUrl: `minio:${avatarUrl}` },
