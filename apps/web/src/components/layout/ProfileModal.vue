@@ -29,12 +29,8 @@ async function handleSave() {
   success.value = ''
   loading.value = true
   try {
-    const data: Record<string, unknown> = {}
-
-    if (name.value.trim() && name.value !== auth.user?.name) data['name'] = name.value.trim()
-
+    // Step 1: Upload avatar if selected (directly updates DB + local state, no extra save needed)
     if (avatarFile.value) {
-      // Upload avatar via FormData to dedicated endpoint or base64 inline
       const formData = new FormData()
       formData.append('file', avatarFile.value)
       const token = localStorage.getItem('accessToken') || ''
@@ -45,26 +41,29 @@ async function handleSave() {
       })
       const uploadBody = await uploadRes.json()
       if (uploadBody.code === 0) {
-        data['avatarUrl'] = uploadBody.data.avatarUrl
+        // Re-fetch profile to sync avatarUrl from DB into local state
+        await auth.fetchProfile()
       } else {
         throw new Error(uploadBody.message || '头像上传失败')
       }
-    } else if (avatarPreview.value === null && auth.user?.avatarUrl) {
-      // User cleared avatar
-      data['avatarUrl'] = null
+      avatarFile.value = null
     }
 
+    // Step 2: Update name/password if changed
+    const profileData: Record<string, string> = {}
+    if (name.value.trim() && name.value !== auth.user?.name) profileData['name'] = name.value.trim()
     if (currentPassword.value && newPassword.value) {
-      data['currentPassword'] = currentPassword.value
-      data['newPassword'] = newPassword.value
+      profileData['currentPassword'] = currentPassword.value
+      profileData['newPassword'] = newPassword.value
     }
 
-    if (Object.keys(data).length === 0) { emit('close'); return }
-    await auth.updateProfile(data as Record<string, string>)
+    if (Object.keys(profileData).length > 0) {
+      await auth.updateProfile(profileData)
+      currentPassword.value = ''
+      newPassword.value = ''
+    }
+
     success.value = '已更新'
-    currentPassword.value = ''
-    newPassword.value = ''
-    avatarFile.value = null
   } catch (err) {
     error.value = err instanceof Error ? err.message : '更新失败'
   }
