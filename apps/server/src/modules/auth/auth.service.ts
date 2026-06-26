@@ -100,14 +100,28 @@ export class AuthService {
   }
 
   async uploadAvatar(userId: string, file: Express.Multer.File) {
-    // Store avatar as base64 data URL (portable, no MinIO dependency for avatars)
-    const base64 = file.buffer.toString('base64')
-    const avatarUrl = `data:${file.mimetype};base64,${base64}`
+    const ext = file.originalname.split('.').pop() || 'png'
+    const key = `avatars/${userId}-${Date.now()}.${ext}`
+    const { StorageService } = await import('@/infrastructure/storage/storage.service')
+    const storage = new StorageService()
+    await storage.uploadFile(key, file.buffer, file.mimetype)
 
+    const avatarUrl = `/api/v1/auth/avatar/${userId}?key=${encodeURIComponent(key)}`
     return this.prisma.user.update({
       where: { id: userId },
       data: { avatarUrl },
       select: { id: true, avatarUrl: true },
     })
+  }
+
+  async serveAvatar(userId: string, key: string, res: { setHeader: (k: string, v: string) => void; send: (b: Buffer) => void }) {
+    const { StorageService: Svc } = await import('@/infrastructure/storage/storage.service')
+    const storage = new Svc()
+    const buffer = await storage.getFile(key)
+    const ext = key.split('.').pop()?.toLowerCase() || 'png'
+    const mimeMap: Record<string, string> = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml' }
+    res.setHeader('Content-Type', mimeMap[ext] || 'image/png')
+    res.setHeader('Cache-Control', 'public, max-age=86400')
+    res.send(buffer)
   }
 }

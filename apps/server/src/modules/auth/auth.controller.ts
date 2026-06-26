@@ -1,7 +1,7 @@
-import { Controller, Post, Body, Get, Patch, UseGuards, Req, UploadedFile, UseInterceptors, BadRequestException, Inject } from '@nestjs/common'
+import { Controller, Post, Body, Get, Patch, UseGuards, Req, Res, Param, Query, UploadedFile, UseInterceptors, BadRequestException, Inject } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { AuthGuard } from '@nestjs/passport'
-import type { Request } from 'express'
+import type { Request, Response } from 'express'
 import { AuthService } from './auth.service'
 
 interface JwtRequest extends Request { user: { id: string; email: string; role: string } }
@@ -41,5 +41,10 @@ export class AuthController {
   uploadAvatar(@Req() req: JwtRequest, @UploadedFile() file: Express.Multer.File) {
     if (!file) throw new BadRequestException('No file uploaded')
     return this.authService.uploadAvatar(req.user.id, file)
+  }
+
+  @Get('avatar/:userId')
+  async serveAvatar(@Param('userId') userId: string, @Query('key') key: string, @Res() res: Response) {
+    return this.authService.serveAvatar(userId, key, res)
   }
 }
