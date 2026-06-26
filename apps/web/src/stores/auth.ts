@@ -31,11 +31,11 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
   }
 
-  async function login(email: string, password: string) {
+  async function login(account: string, password: string) {
     const res = await fetch('/api/v1/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ account, password }),
     })
     const body = await res.json()
     if (body.code !== 0) throw new Error(body.message)

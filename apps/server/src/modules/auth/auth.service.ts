@@ -21,12 +21,15 @@ export class AuthService {
     return this.generateTokens(user.id)
   }
 
-  async login(email: string, password: string) {
-    const user = await this.prisma.user.findUnique({ where: { email } })
-    if (!user) throw new UnauthorizedException('邮箱或密码错误')
+  async login(account: string, password: string) {
+    // Support login by email OR nickname
+    const user = await this.prisma.user.findFirst({
+      where: { OR: [{ email: account }, { name: account }] },
+    })
+    if (!user) throw new UnauthorizedException('账号或密码错误')
 
     const valid = await bcrypt.compare(password, user.passwordHash)
-    if (!valid) throw new UnauthorizedException('邮箱或密码错误')
+    if (!valid) throw new UnauthorizedException('账号或密码错误')
 
     return this.generateTokens(user.id)
   }

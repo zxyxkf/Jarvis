@@ -1,18 +1,19 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
 const router = useRouter()
-const email = ref('')
+const account = ref('')
 const password = ref('')
 const name = ref('')
 const isRegister = ref(false)
 const error = ref('')
 const loading = ref(false)
+const rememberAccount = ref(false)
+const rememberPassword = ref(false)
 
-// Spotlight follows mouse
 const spotX = ref(50)
 const spotY = ref(40)
 function onMouseMove(e: MouseEvent) {
@@ -20,15 +21,44 @@ function onMouseMove(e: MouseEvent) {
   spotY.value = (e.clientY / window.innerHeight) * 100
 }
 
+const ACCOUNT_KEY = 'jarvis_saved_account'
+const PASSWORD_KEY = 'jarvis_saved_password'
+
+onMounted(() => {
+  const savedAccount = localStorage.getItem(ACCOUNT_KEY)
+  const savedPassword = localStorage.getItem(PASSWORD_KEY)
+  if (savedAccount) {
+    account.value = savedAccount
+    rememberAccount.value = true
+  }
+  if (savedPassword) {
+    password.value = savedPassword
+    rememberPassword.value = true
+  }
+})
+
 async function handleSubmit() {
   error.value = ''
   loading.value = true
   try {
     if (isRegister.value) {
-      await auth.register(email.value, password.value, name.value || email.value.split('@')[0] || 'User')
+      await auth.register(account.value, password.value, name.value || account.value.split('@')[0] || 'User')
     } else {
-      await auth.login(email.value, password.value)
+      await auth.login(account.value, password.value)
     }
+
+    // Remember account / password
+    if (rememberAccount.value) {
+      localStorage.setItem(ACCOUNT_KEY, account.value)
+    } else {
+      localStorage.removeItem(ACCOUNT_KEY)
+    }
+    if (rememberPassword.value) {
+      localStorage.setItem(PASSWORD_KEY, password.value)
+    } else {
+      localStorage.removeItem(PASSWORD_KEY)
+    }
+
     router.push('/')
   } catch (err) {
     error.value = err instanceof Error ? err.message : '操作失败'
@@ -39,11 +69,8 @@ async function handleSubmit() {
 
 <template>
   <div class="login-full" @mousemove="onMouseMove">
-    <!-- Spotlight -->
     <div class="spotlight" :style="{ background: `radial-gradient(600px circle at ${spotX}% ${spotY}%, rgba(16,163,127,0.12) 0%, transparent 70%)` }" />
     <div class="spotlight-2" :style="{ background: `radial-gradient(400px circle at ${100-spotX}% ${100-spotY}%, rgba(16,163,127,0.06) 0%, transparent 60%)` }" />
-
-    <!-- Grid pattern -->
     <div class="grid-bg" />
 
     <div class="login-container">
@@ -71,25 +98,41 @@ async function handleSubmit() {
         <div class="form-card">
           <div class="form-header">
             <h2 class="form-title">{{ isRegister ? '创建账户' : '欢迎回来' }}</h2>
-            <p class="form-sub">{{ isRegister ? '注册一个 Jarvis 账户' : '登录你的 Jarvis 账户' }}</p>
+            <p class="form-sub">{{ isRegister ? '注册后可使用昵称登录' : '支持邮箱或昵称登录' }}</p>
           </div>
 
           <div v-if="error" class="error-box">{{ error }}</div>
 
           <form class="form" @submit.prevent="handleSubmit">
             <div class="field-group">
-              <label class="field-label">邮箱</label>
-              <input v-model="email" type="email" class="field-input" placeholder="name@company.com" required autocomplete="email" />
+              <label class="field-label">{{ isRegister ? '邮箱' : '账号' }}</label>
+              <input v-model="account" type="text" class="field-input" :placeholder="isRegister ? 'name@company.com' : '邮箱或昵称'" required autocomplete="username" />
             </div>
 
             <div v-if="isRegister" class="field-group">
               <label class="field-label">昵称</label>
-              <input v-model="name" class="field-input" placeholder="你的名字" autocomplete="name" />
+              <input v-model="name" class="field-input" placeholder="用于登录的昵称" autocomplete="name" />
             </div>
 
             <div class="field-group">
               <label class="field-label">密码</label>
               <input v-model="password" type="password" class="field-input" placeholder="至少 6 位" required minlength="6" autocomplete="current-password" />
+            </div>
+
+            <!-- Remember checkboxes (login mode only) -->
+            <div v-if="!isRegister" class="remember-row">
+              <label class="remember-label" @click="rememberAccount = !rememberAccount">
+                <span class="checkbox" :class="{ checked: rememberAccount }">
+                  <svg v-if="rememberAccount" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </span>
+                <span class="remember-text">记住账号</span>
+              </label>
+              <label class="remember-label" @click="rememberPassword = !rememberPassword">
+                <span class="checkbox" :class="{ checked: rememberPassword }">
+                  <svg v-if="rememberPassword" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </span>
+                <span class="remember-text">记住密码</span>
+              </label>
             </div>
 
             <button type="submit" :disabled="loading" class="submit-btn">
@@ -116,13 +159,11 @@ async function handleSubmit() {
   font-family: Inter, system-ui, sans-serif;
 }
 
-/* ── Spotlights ── */
 .spotlight, .spotlight-2 {
   position: absolute; inset: 0; pointer-events: none;
   transition: background 0.3s ease-out;
 }
 
-/* ── Grid ── */
 .grid-bg {
   position: absolute; inset: 0; pointer-events: none;
   background-image:
@@ -131,11 +172,10 @@ async function handleSubmit() {
   background-size: 60px 60px;
 }
 
-/* ── Container ── */
 .login-container {
   position: relative; z-index: 1;
   display: flex;
-  width: 900px; max-width: 96vw; min-height: 520px;
+  width: 900px; max-width: 96vw; min-height: 540px;
   background: rgba(17,17,17,0.8);
   border: 1px solid rgba(255,255,255,0.06);
   border-radius: 24px;
@@ -144,7 +184,6 @@ async function handleSubmit() {
   backdrop-filter: blur(20px);
 }
 
-/* ── Left Branding ── */
 .brand-panel {
   flex: 1; display: flex; align-items: center; padding: 48px 40px;
   background: linear-gradient(135deg, rgba(16,163,127,0.06) 0%, transparent 50%);
@@ -166,7 +205,6 @@ async function handleSubmit() {
   flex-shrink: 0;
 }
 
-/* ── Right Form ── */
 .form-panel {
   flex: 1; display: flex; align-items: center; padding: 48px 40px;
 }
@@ -202,6 +240,27 @@ async function handleSubmit() {
   background: rgba(16,163,127,0.04);
 }
 .field-input::placeholder { color: #555 }
+
+/* ── Remember checkboxes ── */
+.remember-row {
+  display: flex; gap: 20px; margin-top: -4px;
+}
+.remember-label {
+  display: flex; align-items: center; gap: 6px; cursor: pointer;
+  user-select: none;
+}
+.checkbox {
+  width: 18px; height: 18px;
+  border: 1.5px solid rgba(255,255,255,0.15);
+  border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.checkbox.checked {
+  background: #10a37f; border-color: #10a37f; color: #fff;
+}
+.remember-text { font-size: 13px; color: #777 }
 
 .submit-btn {
   width: 100%; margin-top: 4px;

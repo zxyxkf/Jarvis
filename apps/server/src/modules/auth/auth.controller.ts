@@ -15,9 +15,9 @@ export class AuthController {
     return this.authService.register(body.email, body.password, body.name)
   }
   @Post('login')
-  login(@Body() body: { email: string; password: string }) {
-    if (!body.email || !body.password) throw new BadRequestException('Missing fields')
-    return this.authService.login(body.email, body.password)
+  login(@Body() body: { account: string; password: string }) {
+    if (!body.account || !body.password) throw new BadRequestException('Missing fields')
+    return this.authService.login(body.account, body.password)
   }
   @Post('refresh')
   refresh(@Body() body: { refreshToken: string }) {
