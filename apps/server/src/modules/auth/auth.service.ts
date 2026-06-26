@@ -100,16 +100,13 @@ export class AuthService {
   }
 
   async uploadAvatar(userId: string, file: Express.Multer.File) {
-    // Lazy-load StorageService to avoid DI decorator issues with tsx
-    const { StorageService } = await import('@/infrastructure/storage/storage.service')
-    const storage = new StorageService()
+    // Store avatar as base64 data URL (portable, no MinIO dependency for avatars)
+    const base64 = file.buffer.toString('base64')
+    const avatarUrl = `data:${file.mimetype};base64,${base64}`
 
-    const ext = file.originalname.split('.').pop() || 'png'
-    const key = `avatars/${userId}.${ext}`
-    const avatarUrl = await storage.uploadFile(key, file.buffer, file.mimetype)
     return this.prisma.user.update({
       where: { id: userId },
-      data: { avatarUrl: `minio:${avatarUrl}` },
+      data: { avatarUrl },
       select: { id: true, avatarUrl: true },
     })
   }

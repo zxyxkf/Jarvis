@@ -29,7 +29,8 @@ function keepFlyout() { if (flyoutTimer) clearTimeout(flyoutTimer); flyoutOpen.v
 <template>
   <DropdownMenuRoot>
     <DropdownMenuTrigger class="avatar-btn">
-      <div class="avatar">{{ auth.user ? initials(auth.user.name) : '?' }}</div>
+      <img v-if="auth.user?.avatarUrl" :src="auth.user.avatarUrl" class="avatar avatar-img" alt="" />
+      <div v-else class="avatar">{{ auth.user ? initials(auth.user.name) : '?' }}</div>
       <div class="avatar-name">{{ auth.user?.name || '未登录' }}</div>
     </DropdownMenuTrigger>
 
@@ -37,7 +38,8 @@ function keepFlyout() { if (flyoutTimer) clearTimeout(flyoutTimer); flyoutOpen.v
       <DropdownMenuContent side="top" align="start" :side-offset="10" class="menu-box">
         <!-- User info -->
         <div class="menu-user">
-          <div class="menu-avatar">{{ auth.user ? initials(auth.user.name) : '?' }}</div>
+          <img v-if="auth.user?.avatarUrl" :src="auth.user.avatarUrl" class="menu-avatar" alt="" />
+          <div v-else class="menu-avatar menu-avatar-text">{{ auth.user ? initials(auth.user.name) : '?' }}</div>
           <div>
             <div class="menu-name">{{ auth.user?.name }}</div>
             <div class="menu-email">{{ auth.user?.email }}</div>
@@ -83,7 +85,8 @@ function keepFlyout() { if (flyoutTimer) clearTimeout(flyoutTimer); flyoutOpen.v
   box-shadow: 0 12px 40px rgba(0,0,0,0.4) !important;
 }
 .menu-user { display: flex; align-items: center; gap: 10px; padding: 6px 8px 10px }
-.menu-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--color-accent-muted); color: var(--color-accent); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0 }
+.menu-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0 }
+.menu-avatar-text { background: var(--color-accent-muted); color: var(--color-accent); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700 }
 .menu-name { font-size: 13px; font-weight: 600; color: var(--color-text-primary); margin-bottom: 1px }
 .menu-email { font-size: 11px; color: var(--color-text-muted) }
 
@@ -127,5 +130,6 @@ function keepFlyout() { if (flyoutTimer) clearTimeout(flyoutTimer); flyoutOpen.v
 .avatar-btn{display:flex;align-items:center;gap:10px;width:100%;padding:8px;border-radius:10px;cursor:pointer;color:var(--color-text-primary);font-family:inherit;transition:background .15s}
 .avatar-btn:hover{background:var(--color-bg-hover)}
 .avatar{width:34px;height:34px;border-radius:50%;background:var(--color-accent-muted);color:var(--color-accent);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.avatar-img{width:34px;height:34px;border-radius:50%;object-fit:cover;flex-shrink:0;background:none}
 .avatar-name{font-size:13px;color:var(--color-text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </style>
